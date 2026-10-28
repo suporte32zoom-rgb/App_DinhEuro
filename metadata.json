@@ -1,0 +1,6 @@
+{
+  "name": "DinhEuro - Hub Financeiro Global",
+  "description": "Plataforma e hub financeiro global com cotações em tempo real via Finnhub, simulador de câmbio universal, ações mundiais e B3, cripto, carteiras e análises de mercado.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
