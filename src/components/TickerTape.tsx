@@ -1,10 +1,10 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useMarket } from '../context/MarketContext';
-import { formatCurrencyValue } from '../utils/finance';
+import { getDualCurrencyDisplay } from '../utils/finance';
 
 export const TickerTape: React.FC = () => {
-  const { assets, setSelectedAsset, lastUpdated } = useMarket();
+  const { assets, setSelectedAsset, universalRates } = useMarket();
 
   // Curated list for the ticker
   const tickerItems = assets.slice(0, 14);
@@ -26,6 +26,8 @@ export const TickerTape: React.FC = () => {
           <div className="animate-ticker flex items-center gap-6">
             {displayItems.map((item, idx) => {
               const isPositive = item.change24h >= 0;
+              const dual = getDualCurrencyDisplay(item.price, item.currency, universalRates);
+
               return (
                 <button
                   key={`${item.id}-${idx}`}
@@ -33,9 +35,12 @@ export const TickerTape: React.FC = () => {
                   className="flex items-center gap-2 hover:bg-slate-800/60 px-2 py-0.5 rounded transition cursor-pointer flex-shrink-0"
                 >
                   <span className="font-bold text-slate-200">{item.symbol}</span>
-                  <span className="font-mono-numbers text-slate-300">
-                    {formatCurrencyValue(item.price, item.currency, item.currency === 'USD' || item.currency === 'BRL' ? (item.price < 10 ? 4 : 2) : 2)}
-                  </span>
+                  <div className="flex items-baseline gap-1 font-mono-numbers">
+                    <span className="text-slate-100 font-semibold">{dual.primaryFormatted}</span>
+                    <span className="text-[10px] text-emerald-400/80 font-medium">
+                      ({dual.secondaryCurrency === 'BRL' ? '≈ ' : '≈ $'}{dual.secondaryFormatted})
+                    </span>
+                  </div>
                   <span
                     className={`flex items-center text-[11px] font-semibold font-mono-numbers ${
                       isPositive ? 'text-emerald-400' : 'text-rose-400'

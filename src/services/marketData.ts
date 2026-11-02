@@ -687,6 +687,151 @@ export function setStoredFinnhubKey(key: string): void {
   }
 }
 
+export interface LiveMarketSnapshot {
+  rates: UniversalRates;
+  updatedAssets: MarketAsset[];
+  news: NewsItem[];
+  rawPairs?: Record<string, any>;
+  sourceSummary: string;
+}
+
+/**
+ * Universal Real-time Market Aggregator:
+ * Integrates:
+ * 1. AwesomeAPI Economy (VITE_AWESOME_ECONOMY_URL) for real-time BRL FX & crypto
+ * 2. Finnhub API (VITE_FINNHUB_API_KEY / FINNHUB_API_KEY) for US equities & global news
+ * 3. Financial Modeling Prep (VITE_FMP_API_KEY / FMP_API_KEY) for indices & US stocks
+ * 4. Binance 24hr ticker for live crypto prices
+ * 5. Brapi for B3 Brazilian equities
+ */
+export async function fetchCompleteLiveMarketData(currentAssets: MarketAsset[]): Promise<LiveMarketSnapshot> {
+  let liveRates: UniversalRates = { ...DEFAULT_UNIVERSAL_RATES };
+  let rawQuotes: Record<string, any> = {};
+  let rawPairs: Record<string, any> = {};
+  let fetchedNews: NewsItem[] = [];
+  let sourcesUsed: string[] = [];
+
+  // Query authoritative server proxy endpoint (aggregates AwesomeAPI, Finnhub, FMP, Binance, Brapi on backend with zero CORS issues)
+  try {
+    const res = await fetch('/api/market/live');
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.rates) {
+        liveRates = { ...liveRates, ...data.rates };
+      }
+      if (data && data.quotes) {
+        rawQuotes = { ...rawQuotes, ...data.quotes };
+      }
+      if (data && data.pairs) {
+        rawPairs = { ...rawPairs, ...data.pairs };
+      }
+      if (data && Array.isArray(data.news) && data.news.length > 0) {
+        fetchedNews = data.news;
+      }
+      sourcesUsed.push('AwesomeAPI', 'Finnhub', 'Binance', 'Brapi');
+    }
+  } catch (err) {
+    console.warn('[DinhEuro] Server live proxy offline:', err);
+  }
+
+  // Step 6: Map quotes cleanly and definitively to assets list
+  const updatedAssets = currentAssets.map((asset) => {
+    // 1. Forex pairs
+    if (asset.id === 'usd_brl' && rawPairs.USDBRL) {
+      const p = rawPairs.USDBRL;
+      return {
+        ...asset,
+        price: p.bid,
+        change24h: p.pctChange,
+        changeValue: p.varBid,
+        high24h: p.high,
+        low24h: p.low,
+        sparkline: [...asset.sparkline.slice(1), p.bid],
+      };
+    }
+    if (asset.id === 'eur_brl' && rawPairs.EURBRL) {
+      const p = rawPairs.EURBRL;
+      return {
+        ...asset,
+        price: p.bid,
+        change24h: p.pctChange,
+        changeValue: p.varBid,
+        high24h: p.high,
+        low24h: p.low,
+        sparkline: [...asset.sparkline.slice(1), p.bid],
+      };
+    }
+    if (asset.id === 'eur_usd') {
+      const eurUsd = liveRates.EUR > 0 ? Number((1 / liveRates.EUR).toFixed(4)) : asset.price;
+      const prev = asset.price;
+      const diff = Number((eurUsd - prev).toFixed(4));
+      return {
+        ...asset,
+        price: eurUsd,
+        changeValue: diff !== 0 ? diff : asset.changeValue,
+        change24h: diff !== 0 ? Number(((diff / prev) * 100).toFixed(2)) : asset.change24h,
+        sparkline: [...asset.sparkline.slice(1), eurUsd],
+      };
+    }
+    if (asset.id === 'gbp_brl' && rawPairs.GBPBRL) {
+      const p = rawPairs.GBPBRL;
+      return {
+        ...asset,
+        price: p.bid,
+        change24h: p.pctChange,
+        changeValue: p.varBid,
+        high24h: p.high,
+        low24h: p.low,
+        sparkline: [...asset.sparkline.slice(1), p.bid],
+      };
+    }
+    if (asset.id === 'usd_jpy' && rawPairs.JPYBRL && rawPairs.USDBRL) {
+      const jpyVal = Number((rawPairs.USDBRL.bid / rawPairs.JPYBRL.bid).toFixed(2));
+      return {
+        ...asset,
+        price: jpyVal,
+        sparkline: [...asset.sparkline.slice(1), jpyVal],
+      };
+    }
+    if (asset.id === 'chf_brl' && rawPairs.CHFBRL) {
+      const p = rawPairs.CHFBRL;
+      return {
+        ...asset,
+        price: p.bid,
+        change24h: p.pctChange,
+        changeValue: p.varBid,
+        high24h: p.high,
+        low24h: p.low,
+        sparkline: [...asset.sparkline.slice(1), p.bid],
+      };
+    }
+
+    // 2. Stocks & Crypto & Indices with matching symbol in rawQuotes
+    const matchQuote = rawQuotes[asset.symbol] || rawQuotes[asset.id];
+    if (matchQuote && matchQuote.price > 0) {
+      return {
+        ...asset,
+        price: matchQuote.price,
+        change24h: matchQuote.changePercent !== undefined ? Number(matchQuote.changePercent.toFixed(2)) : asset.change24h,
+        changeValue: matchQuote.change !== undefined ? Number(matchQuote.change.toFixed(2)) : asset.changeValue,
+        high24h: matchQuote.high && matchQuote.high > 0 ? matchQuote.high : asset.high24h,
+        low24h: matchQuote.low && matchQuote.low > 0 ? matchQuote.low : asset.low24h,
+        sparkline: [...asset.sparkline.slice(1), matchQuote.price],
+      };
+    }
+
+    return asset;
+  });
+
+  return {
+    rates: liveRates,
+    updatedAssets,
+    news: fetchedNews.length > 0 ? fetchedNews : INITIAL_NEWS,
+    rawPairs,
+    sourceSummary: sourcesUsed.length > 0 ? sourcesUsed.join(', ') : 'Standard Market Feed',
+  };
+}
+
 /**
  * Real-time API Fetcher:
  * Tries Finnhub API if key is available, and supplements with public ECB/Frankfurter API for forex rates.

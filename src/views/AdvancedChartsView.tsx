@@ -10,10 +10,10 @@ import {
 } from 'lucide-react';
 import { useMarket } from '../context/MarketContext';
 import { generateAssetCandles, CandlePoint } from '../services/marketData';
-import { formatCurrencyValue } from '../utils/finance';
+import { formatCurrencyValue, getDualCurrencyDisplay } from '../utils/finance';
 
 export const AdvancedChartsView: React.FC = () => {
-  const { assets } = useMarket();
+  const { assets, universalRates } = useMarket();
 
   const [selectedSymbol, setSelectedSymbol] = useState<string>('EUR/BRL');
   const [timeframe, setTimeframe] = useState<'1D' | '5D' | '1M' | '6M' | '1A'>('1M');
@@ -127,9 +127,12 @@ export const AdvancedChartsView: React.FC = () => {
                 <span className="text-lg font-black text-white">{currentAsset.symbol}</span>
                 <span className="text-xs text-slate-400 font-medium">{currentAsset.name}</span>
               </div>
-              <div className="flex items-center gap-3 text-xs font-mono-numbers mt-0.5">
+              <div className="flex flex-wrap items-baseline gap-2.5 text-xs font-mono-numbers mt-0.5">
                 <span className="text-xl font-bold text-white">
-                  {formatCurrencyValue(currentAsset.price, currentAsset.currency, currentAsset.price < 10 ? 4 : 2)}
+                  {getDualCurrencyDisplay(currentAsset.price, currentAsset.currency, universalRates).primaryFormatted}
+                </span>
+                <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  ≈ {getDualCurrencyDisplay(currentAsset.price, currentAsset.currency, universalRates).secondaryFormatted}
                 </span>
                 <span
                   className={`font-semibold ${

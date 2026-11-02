@@ -14,9 +14,10 @@ import {
 } from 'lucide-react';
 import { useMarket } from '../context/MarketContext';
 import { formatCurrencyValue, convertCurrency } from '../utils/finance';
+import { DualPrice } from '../components/DualPrice';
 
 export const DashboardView: React.FC = () => {
-  const { assets, universalRates, news, setActiveTab, setSelectedAsset, openAssetDetail, refreshData, lastUpdated } =
+  const { assets, universalRates, news, setActiveTab, setSelectedAsset, openAssetDetail, refreshData, lastUpdated, apiSourceSummary } =
     useMarket();
 
   // Currency Converter local quick state (synchronised with global rates)
@@ -54,7 +55,7 @@ export const DashboardView: React.FC = () => {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold mb-3">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Dados Globais em Tempo Real • Finnhub Engine</span>
+                <span>Dados Globais em Tempo Real • Finnhub • AwesomeAPI • Binance • Brapi</span>
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
                 Hub Financeiro Global{' '}
@@ -268,9 +269,14 @@ export const DashboardView: React.FC = () => {
                   </span>
                   <span className="text-sm">{index.flag}</span>
                 </div>
-                <div className="font-mono-numbers text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                  {formatCurrencyValue(index.price, index.currency, 2)}
-                </div>
+                <DualPrice
+                  price={index.price}
+                  currency={index.currency}
+                  rates={universalRates}
+                  layout="stacked"
+                  primaryClassName="font-mono-numbers text-sm font-extrabold text-slate-900 dark:text-slate-100"
+                  secondaryClassName="text-[11px] font-mono-numbers text-emerald-500/90 font-medium"
+                />
                 <div
                   className={`flex items-center text-xs font-semibold font-mono-numbers mt-1 ${
                     isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
@@ -345,9 +351,14 @@ export const DashboardView: React.FC = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs font-mono-numbers font-semibold text-slate-900 dark:text-white">
-                        {formatCurrencyValue(stock.price, stock.currency)}
-                      </div>
+                      <DualPrice
+                        price={stock.price}
+                        currency={stock.currency}
+                        rates={universalRates}
+                        layout="compact"
+                        primaryClassName="text-xs font-mono-numbers font-semibold text-slate-900 dark:text-white"
+                        secondaryClassName="text-[10px] font-mono-numbers text-emerald-500/90"
+                      />
                       <div className="text-xs font-mono-numbers font-bold text-emerald-600 dark:text-emerald-400">
                         +{stock.change24h.toFixed(2)}%
                       </div>
@@ -384,9 +395,14 @@ export const DashboardView: React.FC = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs font-mono-numbers font-semibold text-slate-900 dark:text-white">
-                        {formatCurrencyValue(stock.price, stock.currency)}
-                      </div>
+                      <DualPrice
+                        price={stock.price}
+                        currency={stock.currency}
+                        rates={universalRates}
+                        layout="compact"
+                        primaryClassName="text-xs font-mono-numbers font-semibold text-slate-900 dark:text-white"
+                        secondaryClassName="text-[10px] font-mono-numbers text-emerald-500/90"
+                      />
                       <div className="text-xs font-mono-numbers font-bold text-rose-600 dark:text-rose-400">
                         {stock.change24h.toFixed(2)}%
                       </div>
@@ -436,11 +452,16 @@ export const DashboardView: React.FC = () => {
                     </div>
 
                     <div className="text-right">
-                      <div className="text-xs font-mono-numbers font-bold text-white">
-                        {pair.price.toFixed(4)}
-                      </div>
+                      <DualPrice
+                        price={pair.price}
+                        currency={pair.currency}
+                        rates={universalRates}
+                        layout="compact"
+                        primaryClassName="text-xs font-mono-numbers font-bold text-white"
+                        secondaryClassName="text-[10px] font-mono-numbers text-emerald-400/80"
+                      />
                       <div
-                        className={`text-[10px] font-mono-numbers font-semibold ${
+                        className={`text-[10px] font-mono-numbers font-semibold mt-0.5 ${
                           isPos ? 'text-emerald-400' : 'text-rose-400'
                         }`}
                       >

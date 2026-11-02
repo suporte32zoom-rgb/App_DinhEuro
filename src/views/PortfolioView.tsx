@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useMarket, PortfolioPosition } from '../context/MarketContext';
 import { formatCurrencyValue } from '../utils/finance';
+import { DualPrice } from '../components/DualPrice';
 
 export const PortfolioView: React.FC = () => {
   const { portfolio, addPortfolioPosition, removePortfolioPosition, assets, universalRates } =
@@ -238,11 +239,25 @@ export const PortfolioView: React.FC = () => {
                     <td className="py-3.5 px-4 text-right font-mono-numbers text-slate-300">
                       {formatCurrencyValue(pos.averageBuyPrice, pos.currency)}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono-numbers font-bold text-white">
-                      {formatCurrencyValue(pos.currentPrice, pos.currency)}
+                    <td className="py-3.5 px-4 text-right">
+                      <DualPrice
+                        price={pos.currentPrice}
+                        currency={pos.currency}
+                        rates={universalRates}
+                        layout="compact"
+                        primaryClassName="font-mono-numbers font-bold text-white text-xs"
+                        secondaryClassName="text-[10px] font-mono-numbers text-emerald-400"
+                      />
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono-numbers font-bold text-white">
-                      {formatCurrencyValue(pos.currentTotalValue, pos.currency)}
+                    <td className="py-3.5 px-4 text-right">
+                      <DualPrice
+                        price={pos.currentTotalValue}
+                        currency={pos.currency}
+                        rates={universalRates}
+                        layout="compact"
+                        primaryClassName="font-mono-numbers font-bold text-white text-xs"
+                        secondaryClassName="text-[10px] font-mono-numbers text-emerald-400 font-medium"
+                      />
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono-numbers font-bold">
                       <span

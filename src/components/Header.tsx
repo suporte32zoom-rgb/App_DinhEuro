@@ -17,6 +17,7 @@ import {
 import { useMarket, NavigationTab } from '../context/MarketContext';
 import { PWAInstallButton } from './PWAInstallButton';
 import { formatCurrencyValue } from '../utils/finance';
+import { DualPrice } from './DualPrice';
 
 export const Header: React.FC = () => {
   const {
@@ -28,6 +29,7 @@ export const Header: React.FC = () => {
     setDisplayCurrency,
     theme,
     toggleTheme,
+    universalRates,
   } = useMarket();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -329,9 +331,14 @@ export const Header: React.FC = () => {
                       </div>
 
                       <div className="text-right">
-                        <div className="font-mono-numbers text-xs font-semibold text-white">
-                          {formatCurrencyValue(asset.price, asset.currency)}
-                        </div>
+                        <DualPrice
+                          price={asset.price}
+                          currency={asset.currency}
+                          rates={universalRates}
+                          layout="compact"
+                          primaryClassName="font-mono-numbers text-xs font-semibold text-white"
+                          secondaryClassName="text-[10px] font-mono-numbers text-emerald-400"
+                        />
                         <div
                           className={`text-[11px] font-semibold font-mono-numbers ${
                             isPositive ? 'text-emerald-400' : 'text-rose-400'

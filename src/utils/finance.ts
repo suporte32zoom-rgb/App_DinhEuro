@@ -219,3 +219,62 @@ export function formatCurrencyValue(
     return `${currency} ${value.toFixed(decimals)}`;
   }
 }
+
+export interface DualCurrencyInfo {
+  primaryFormatted: string;
+  secondaryFormatted: string;
+  primaryCurrency: string;
+  secondaryCurrency: string;
+  primaryValue: number;
+  secondaryValue: number;
+  convertedBRL: number;
+  convertedUSD: number;
+}
+
+/**
+ * Standardized Multicurrency Engine (USD and BRL):
+ * For every asset listed on DinhEuro:
+ * - If asset is in USD (or foreign currency): displays native price in USD/foreign and converted equivalent in BRL.
+ * - If asset is in BRL (like B3 Brazilian equities or IBOVESPA): displays native price in BRL and converted equivalent in USD.
+ * - Always keeps synchronized dual USD/BRL representation in real-time.
+ */
+export function getDualCurrencyDisplay(
+  price: number,
+  currency: string = 'USD',
+  rates: CurrencyRates = { USD: 1.0, BRL: 5.485 }
+): DualCurrencyInfo {
+  const normCur = (currency || 'USD').toUpperCase();
+  const brlRate = rates['BRL'] && rates['BRL'] > 0 ? rates['BRL'] : 5.485;
+  const curRate = rates[normCur] && rates[normCur] > 0 ? rates[normCur] : 1.0;
+
+  // Convert to USD base first
+  const valueInUSD = normCur === 'USD' ? price : normCur === 'BRL' ? price / brlRate : price / curRate;
+  const valueInBRL = valueInUSD * brlRate;
+
+  const decimals = normCur === 'JPY' ? 0 : price < 10 && normCur !== 'BRL' ? 4 : 2;
+  const primaryFormatted = formatCurrencyValue(price, normCur, decimals);
+
+  if (normCur === 'BRL') {
+    return {
+      primaryFormatted,
+      secondaryFormatted: formatCurrencyValue(valueInUSD, 'USD', 2),
+      primaryCurrency: 'BRL',
+      secondaryCurrency: 'USD',
+      primaryValue: price,
+      secondaryValue: valueInUSD,
+      convertedBRL: price,
+      convertedUSD: valueInUSD,
+    };
+  } else {
+    return {
+      primaryFormatted,
+      secondaryFormatted: formatCurrencyValue(valueInBRL, 'BRL', 2),
+      primaryCurrency: normCur,
+      secondaryCurrency: 'BRL',
+      primaryValue: price,
+      secondaryValue: valueInBRL,
+      convertedBRL: valueInBRL,
+      convertedUSD: valueInUSD,
+    };
+  }
+}

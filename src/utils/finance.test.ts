@@ -5,6 +5,7 @@ import {
   calculateCompoundInterest,
   calculateInflationImpact,
   calculateProfitAndTax,
+  getDualCurrencyDisplay,
   CurrencyRates
 } from './finance';
 
@@ -86,3 +87,24 @@ test('calculateProfitAndTax respects Brazilian stock exemption threshold', () =>
   assert.equal(dayTradeResult.estimatedTaxDue, 1000); // 20% of 5,000
   assert.equal(dayTradeResult.netProfit, 4000);
 });
+
+test('getDualCurrencyDisplay formats USD assets with BRL converted values', () => {
+  const rates: CurrencyRates = { USD: 1.0, BRL: 5.50 };
+
+  // For Apple stock at 200 USD: primary is USD, secondary is BRL (200 * 5.5 = 1100 BRL)
+  const dualUsd = getDualCurrencyDisplay(200, 'USD', rates);
+  assert.equal(dualUsd.primaryCurrency, 'USD');
+  assert.equal(dualUsd.secondaryCurrency, 'BRL');
+  assert.equal(dualUsd.convertedBRL, 1100);
+  assert.ok(dualUsd.primaryFormatted.includes('200'));
+  assert.ok(dualUsd.secondaryFormatted.includes('1.100') || dualUsd.secondaryFormatted.includes('1100'));
+
+  // For Petrobras at 35 BRL: primary is BRL, secondary is USD (35 / 5.5 = 6.36 USD)
+  const dualBrl = getDualCurrencyDisplay(35, 'BRL', rates);
+  assert.equal(dualBrl.primaryCurrency, 'BRL');
+  assert.equal(dualBrl.secondaryCurrency, 'USD');
+  assert.equal(Number(dualBrl.convertedUSD.toFixed(2)), 6.36);
+  assert.ok(dualBrl.primaryFormatted.includes('35'));
+  assert.ok(dualBrl.secondaryFormatted.includes('6.36') || dualBrl.secondaryFormatted.includes('6,36'));
+});
+

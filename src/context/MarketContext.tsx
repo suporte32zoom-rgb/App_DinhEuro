@@ -7,6 +7,7 @@ import {
   INITIAL_NEWS,
   DEFAULT_UNIVERSAL_RATES,
   fetchLiveExchangeRates,
+  fetchCompleteLiveMarketData,
   getStoredFinnhubKey,
   setStoredFinnhubKey,
   obterCotacaoFinnhub,
@@ -58,6 +59,7 @@ interface MarketContextType {
   theme: ThemeMode;
   toggleTheme: () => void;
   setTheme: (theme: ThemeMode) => void;
+  apiSourceSummary: string;
 }
 
 const MarketContext = createContext<MarketContextType | undefined>(undefined);
@@ -111,13 +113,14 @@ const INITIAL_DEMO_PORTFOLIO: PortfolioPosition[] = [
 export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [assets, setAssets] = useState<MarketAsset[]>(INITIAL_ASSETS);
   const [universalRates, setUniversalRates] = useState<UniversalRates>(DEFAULT_UNIVERSAL_RATES);
-  const [news] = useState<NewsItem[]>(INITIAL_NEWS);
+  const [news, setNews] = useState<NewsItem[]>(INITIAL_NEWS);
   const [activeTab, setActiveTabState] = useState<NavigationTab>('dashboard');
   const [selectedAsset, setSelectedAsset] = useState<MarketAsset | null>(null);
   const [finnhubKey, setFinnhubKey] = useState<string>(getStoredFinnhubKey());
   const [isLiveUpdating, setIsLiveUpdating] = useState<boolean>(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [displayCurrency, setDisplayCurrency] = useState<'BRL' | 'EUR' | 'USD'>('BRL');
+  const [apiSourceSummary, setApiSourceSummary] = useState<string>('AwesomeAPI, Finnhub, Binance, Brapi');
 
   // Theme State: persisted in localStorage ('dark' or 'light')
   const [theme, setThemeState] = useState<ThemeMode>(() => {
@@ -221,129 +224,40 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setStoredFinnhubKey(key);
   }, []);
 
-  // Fetch live exchange rates and sync all currency blocks
+  // Fetch live market data across all integrated APIs (AwesomeAPI, Finnhub, FMP, Binance, Brapi)
   const refreshData = useCallback(async () => {
     try {
-      const liveRates = await fetchLiveExchangeRates(finnhubKey);
-      setUniversalRates(liveRates);
-
-      // Micro-fluctuations simulating active live quotes across assets
-      setAssets((prev) =>
-        prev.map((asset) => {
-          // Sync forex pairs directly and synchronously from universal rates
-          if (asset.id === 'usd_brl') {
-            const newPrice = Number(liveRates.BRL.toFixed(4));
-            const changeVal = Number((newPrice - 5.48).toFixed(4));
-            return {
-              ...asset,
-              price: newPrice,
-              changeValue: changeVal,
-              change24h: Number(((changeVal / 5.48) * 100).toFixed(2)),
-              high24h: Math.max(asset.high24h, newPrice),
-              low24h: Math.min(asset.low24h, newPrice),
-              sparkline: [...asset.sparkline.slice(1), newPrice],
-            };
-          }
-          if (asset.id === 'eur_brl') {
-            const eurRate = liveRates.BRL / (liveRates.EUR || 0.922);
-            const newPrice = Number(eurRate.toFixed(4));
-            const changeVal = Number((newPrice - 5.92).toFixed(4));
-            return {
-              ...asset,
-              price: newPrice,
-              changeValue: changeVal,
-              change24h: Number(((changeVal / 5.92) * 100).toFixed(2)),
-              high24h: Math.max(asset.high24h, newPrice),
-              low24h: Math.min(asset.low24h, newPrice),
-              sparkline: [...asset.sparkline.slice(1), newPrice],
-            };
-          }
-          if (asset.id === 'eur_usd') {
-            const eurUsdRate = 1.0 / (liveRates.EUR || 0.922);
-            const newPrice = Number(eurUsdRate.toFixed(4));
-            const changeVal = Number((newPrice - 1.082).toFixed(4));
-            return {
-              ...asset,
-              price: newPrice,
-              changeValue: changeVal,
-              change24h: Number(((changeVal / 1.082) * 100).toFixed(2)),
-              high24h: Math.max(asset.high24h, newPrice),
-              low24h: Math.min(asset.low24h, newPrice),
-              sparkline: [...asset.sparkline.slice(1), newPrice],
-            };
-          }
-          if (asset.id === 'gbp_brl') {
-            const gbpRate = liveRates.BRL / (liveRates.GBP || 0.774);
-            const newPrice = Number(gbpRate.toFixed(4));
-            const changeVal = Number((newPrice - 7.08).toFixed(4));
-            return {
-              ...asset,
-              price: newPrice,
-              changeValue: changeVal,
-              change24h: Number(((changeVal / 7.08) * 100).toFixed(2)),
-              high24h: Math.max(asset.high24h, newPrice),
-              low24h: Math.min(asset.low24h, newPrice),
-              sparkline: [...asset.sparkline.slice(1), newPrice],
-            };
-          }
-          if (asset.id === 'usd_jpy') {
-            const newPrice = Number(liveRates.JPY.toFixed(2));
-            const changeVal = Number((newPrice - 152.0).toFixed(2));
-            return {
-              ...asset,
-              price: newPrice,
-              changeValue: changeVal,
-              change24h: Number(((changeVal / 152.0) * 100).toFixed(2)),
-              high24h: Math.max(asset.high24h, newPrice),
-              low24h: Math.min(asset.low24h, newPrice),
-              sparkline: [...asset.sparkline.slice(1), newPrice],
-            };
-          }
-          if (asset.id === 'chf_brl') {
-            const chfRate = liveRates.BRL / (liveRates.CHF || 0.865);
-            const newPrice = Number(chfRate.toFixed(4));
-            const changeVal = Number((newPrice - 6.32).toFixed(4));
-            return {
-              ...asset,
-              price: newPrice,
-              changeValue: changeVal,
-              change24h: Number(((changeVal / 6.32) * 100).toFixed(2)),
-              high24h: Math.max(asset.high24h, newPrice),
-              low24h: Math.min(asset.low24h, newPrice),
-              sparkline: [...asset.sparkline.slice(1), newPrice],
-            };
-          }
-
-          // Small random realistic tick for stocks, crypto & commodities
-          const tickPercent = (Math.random() - 0.49) * 0.003;
-          const newPrice = Number((asset.price * (1 + tickPercent)).toFixed(2));
-          const diff = Number((newPrice - asset.price).toFixed(2));
-
-          return {
-            ...asset,
-            price: newPrice,
-            changeValue: Number((asset.changeValue + diff).toFixed(2)),
-            high24h: Math.max(asset.high24h, newPrice),
-            low24h: Math.min(asset.low24h, newPrice),
-            sparkline: [...asset.sparkline.slice(1), newPrice],
-          };
-        })
-      );
-
-      setLastUpdated(new Date());
+      setAssets((prevAssets) => {
+        fetchCompleteLiveMarketData(prevAssets)
+          .then((snapshot) => {
+            setUniversalRates(snapshot.rates);
+            setAssets(snapshot.updatedAssets);
+            if (snapshot.news && snapshot.news.length > 0) {
+              setNews(snapshot.news);
+            }
+            if (snapshot.sourceSummary) {
+              setApiSourceSummary(snapshot.sourceSummary);
+            }
+            setLastUpdated(new Date());
+          })
+          .catch((err) => {
+            console.warn('[DinhEuro] Erro ao sincronizar mercado em tempo real:', err);
+          });
+        return prevAssets;
+      });
     } catch (err) {
       console.warn('[DinhEuro] Refresh data warning:', err);
     }
-  }, [finnhubKey]);
+  }, []);
 
-  // Periodic heartbeat every 12 seconds
+  // Periodic heartbeat every 10 seconds for active real-time market updates
   useEffect(() => {
     refreshData();
     if (!isLiveUpdating) return;
 
     const interval = setInterval(() => {
       refreshData();
-    }, 12000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [refreshData, isLiveUpdating]);
@@ -372,6 +286,7 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         theme,
         toggleTheme,
         setTheme,
+        apiSourceSummary,
       }}
     >
       {children}

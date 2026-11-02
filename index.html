@@ -4,6 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <title>DinhEuro - Hub Financeiro Global</title>
+    <script>
+      // Suppress benign Vite HMR WebSocket connection closure in cloud container environments
+      window.addEventListener('unhandledrejection', function(event) {
+        if (event.reason && (typeof event.reason === 'string' || event.reason.message)) {
+          var msg = event.reason.message || String(event.reason);
+          if (msg.includes('WebSocket') || msg.includes('vite')) {
+            event.preventDefault();
+          }
+        }
+      });
+      window.addEventListener('error', function(event) {
+        if (event.message && (event.message.includes('WebSocket') || event.message.includes('vite'))) {
+          event.preventDefault();
+        }
+      });
+    </script>
     <meta name="description" content="Plataforma e hub financeiro global com cotações em tempo real via Finnhub, simulador de câmbio universal, ações mundiais e B3, cripto, carteiras e análises de mercado." />
     
     <!-- PWA & Mobile Meta Tags -->

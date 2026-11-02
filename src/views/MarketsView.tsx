@@ -12,9 +12,10 @@ import {
 import { useMarket } from '../context/MarketContext';
 import { MarketAsset } from '../services/marketData';
 import { formatCurrencyValue } from '../utils/finance';
+import { DualPrice } from '../components/DualPrice';
 
 export const MarketsView: React.FC = () => {
-  const { assets, setSelectedAsset, lastUpdated } = useMarket();
+  const { assets, setSelectedAsset, lastUpdated, universalRates } = useMarket();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [sortBy, setSortBy] = useState<'change' | 'price' | 'symbol' | 'volume'>('change');
@@ -129,7 +130,7 @@ export const MarketsView: React.FC = () => {
                   className="py-3 px-4 text-right cursor-pointer hover:text-white transition"
                 >
                   <div className="flex items-center justify-end gap-1">
-                    <span>Último Preço</span>
+                    <span>Preço (Original & BRL)</span>
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
@@ -183,8 +184,15 @@ export const MarketsView: React.FC = () => {
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 text-right font-mono-numbers font-bold text-white text-xs sm:text-sm">
-                      {formatCurrencyValue(asset.price, asset.currency, asset.price < 10 ? 4 : 2)}
+                    <td className="py-3.5 px-4 text-right">
+                      <DualPrice
+                        price={asset.price}
+                        currency={asset.currency}
+                        rates={universalRates}
+                        layout="compact"
+                        primaryClassName="font-mono-numbers font-bold text-white text-xs sm:text-sm"
+                        secondaryClassName="text-[11px] font-mono-numbers text-emerald-400 font-medium"
+                      />
                     </td>
 
                     <td className="py-3.5 px-4 text-right">

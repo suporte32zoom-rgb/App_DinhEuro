@@ -7,8 +7,12 @@ import {
   processarEventoEmBackground,
   recentWebhookEvents,
 } from './src/server/webhookHandler';
+import { getAggregatedMarketData } from './src/server/marketProxy';
 
 dotenv.config();
+
+// Enforce HMR disabled in AI Studio cloud container environment to prevent WebSocket closed errors
+process.env.DISABLE_HMR = 'true';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,6 +54,17 @@ async function startServer() {
     });
   });
 
+  // Real-time Aggregated Market Data API (Finnhub, AwesomeAPI, FMP, Binance, Brapi)
+  app.get('/api/market/live', async (_req: Request, res: Response) => {
+    try {
+      const data = await getAggregatedMarketData();
+      res.json(data);
+    } catch (err) {
+      console.error('[DinhEuro] Erro ao agregar dados de mercado:', err);
+      res.status(500).json({ error: 'Erro ao obter dados de mercado em tempo real' });
+    }
+  });
+
   // Health check endpoint
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
@@ -65,6 +80,7 @@ async function startServer() {
         middlewareMode: true,
         host: '0.0.0.0',
         port: 3000,
+        hmr: false,
       },
       appType: 'spa',
     });

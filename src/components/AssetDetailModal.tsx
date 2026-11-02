@@ -13,15 +13,17 @@ import {
 } from 'lucide-react';
 import { useMarket } from '../context/MarketContext';
 import { generateAssetCandles } from '../services/marketData';
-import { formatCurrencyValue } from '../utils/finance';
+import { formatCurrencyValue, getDualCurrencyDisplay } from '../utils/finance';
 
 export const AssetDetailModal: React.FC = () => {
-  const { selectedAsset, setSelectedAsset, setActiveTab, addPortfolioPosition } = useMarket();
+  const { selectedAsset, setSelectedAsset, setActiveTab, addPortfolioPosition, universalRates } = useMarket();
   const [timeframe, setTimeframe] = useState<'1D' | '5D' | '1M' | '6M' | '1A'>('1D');
   const [chartType, setChartType] = useState<'line' | 'candle'>('candle');
   const [addedToast, setAddedToast] = useState(false);
 
   if (!selectedAsset) return null;
+
+  const dual = getDualCurrencyDisplay(selectedAsset.price, selectedAsset.currency, universalRates);
 
   const isPositive = selectedAsset.change24h >= 0;
   const candles = generateAssetCandles(selectedAsset.price, timeframe);
@@ -121,12 +123,20 @@ export const AssetDetailModal: React.FC = () => {
         <div className="p-4 sm:p-6 overflow-y-auto space-y-5 no-scrollbar">
           {/* Price & Summary Stats */}
           <div className="flex flex-wrap items-baseline justify-between gap-4">
-            <div>
-              <div className="text-2xl sm:text-3xl font-extrabold font-mono-numbers text-white">
-                {formatCurrencyValue(selectedAsset.price, selectedAsset.currency, selectedAsset.price < 10 ? 4 : 2)}
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-baseline gap-2.5">
+                <span className="text-2xl sm:text-3xl font-extrabold font-mono-numbers text-white">
+                  {dual.primaryFormatted}
+                </span>
+                <span className="text-xs sm:text-sm font-mono-numbers font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/25">
+                  ≈ {dual.secondaryFormatted}
+                </span>
+                <span className="text-[10px] uppercase font-semibold text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
+                  {dual.primaryCurrency} & {dual.secondaryCurrency}
+                </span>
               </div>
               <div
-                className={`flex items-center gap-1.5 text-xs sm:text-sm font-semibold font-mono-numbers mt-1 ${
+                className={`flex items-center gap-1.5 text-xs sm:text-sm font-semibold font-mono-numbers ${
                   isPositive ? 'text-emerald-400' : 'text-rose-400'
                 }`}
               >
@@ -136,7 +146,7 @@ export const AssetDetailModal: React.FC = () => {
                   {selectedAsset.changeValue.toFixed(2)} ({isPositive ? '+' : ''}
                   {selectedAsset.change24h.toFixed(2)}%)
                 </span>
-                <span className="text-slate-400 font-normal text-xs ml-1">Hoje</span>
+                <span className="text-slate-400 font-normal text-xs ml-1">Variação 24h</span>
               </div>
             </div>
 
