@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   BarChart2,
   TrendingUp,
@@ -6,17 +6,108 @@ import {
   Layers,
   Activity,
   Sliders,
-  Maximize2,
+  Clock,
+  ShieldCheck,
 } from 'lucide-react';
 import { useMarket } from '../context/MarketContext';
-import { generateAssetCandles, CandlePoint } from '../services/marketData';
-import { formatCurrencyValue, getDualCurrencyDisplay } from '../utils/finance';
+import { CandlePoint } from '../services/marketData';
+import { getDualCurrencyDisplay } from '../utils/finance';
+
+export type ChartTimeframe = '24h' | '1D' | '5D' | '1M' | '6M' | '1A';
+
+// Deterministic 32-bit PRNG (Mulberry32) for solid, stable historical series
+function createSeededPRNG(seedStr: string) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    h = Math.imul(h ^ seedStr.charCodeAt(i), 16777619);
+  }
+  return function () {
+    h = (h + 0x6d2b79f5) | 0;
+    let t = Math.imul(h ^ (h >>> 15), 1 | h);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Builds a 100% deterministic, jitter-free baseline series for any asset and timeframe.
+ * Guarantees that historical series (5D, 1M, 6M, 1A) remain completely static.
+ */
+export function buildDeterministicSeries(
+  symbol: string,
+  timeframe: ChartTimeframe,
+  basePrice: number
+): CandlePoint[] {
+  const prng = createSeededPRNG(`${symbol}_${timeframe}_dinheuro_v2`);
+  let count = 24;
+  let intervalMinutes = 60;
+
+  if (timeframe === '24h') {
+    count = 24;
+    intervalMinutes = 60;
+  } else if (timeframe === '1D') {
+    count = 28;
+    intervalMinutes = 15;
+  } else if (timeframe === '5D') {
+    count = 30;
+    intervalMinutes = 240;
+  } else if (timeframe === '1M') {
+    count = 30;
+    intervalMinutes = 1440;
+  } else if (timeframe === '6M') {
+    count = 26;
+    intervalMinutes = 1440 * 7;
+  } else if (timeframe === '1A') {
+    count = 52;
+    intervalMinutes = 1440 * 7;
+  }
+
+  const candles: CandlePoint[] = [];
+  let price = basePrice * 0.94;
+  const now = Date.now();
+
+  for (let i = count; i >= 0; i--) {
+    const timeStamp = new Date(now - i * intervalMinutes * 60 * 1000);
+    const variance = (prng() - 0.48) * (price * 0.016);
+    const open = price;
+    const close = Math.max(0.01, open + variance);
+    const high = Math.max(open, close) + prng() * (price * 0.007);
+    const low = Math.min(open, close) - prng() * (price * 0.007);
+    const volume = Math.floor(prng() * 50000 + 10000);
+
+    const timeStr =
+      timeframe === '24h' || timeframe === '1D'
+        ? timeStamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        : timeStamp.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+    candles.push({
+      time: timeStr,
+      open: Number(open.toFixed(2)),
+      high: Number(high.toFixed(2)),
+      low: Number(low.toFixed(2)),
+      close: Number(close.toFixed(2)),
+      volume,
+    });
+
+    price = close;
+  }
+
+  // Pin the final close to the current base price
+  if (candles.length > 0) {
+    const last = candles[candles.length - 1];
+    last.close = Number(basePrice.toFixed(2));
+    last.high = Math.max(last.high, last.close);
+    last.low = Math.min(last.low, last.close);
+  }
+
+  return candles;
+}
 
 export const AdvancedChartsView: React.FC = () => {
   const { assets, universalRates } = useMarket();
 
   const [selectedSymbol, setSelectedSymbol] = useState<string>('EUR/BRL');
-  const [timeframe, setTimeframe] = useState<'1D' | '5D' | '1M' | '6M' | '1A'>('1M');
+  const [timeframe, setTimeframe] = useState<ChartTimeframe>('1D');
   const [chartMode, setChartMode] = useState<'candle' | 'line'>('candle');
   const [showSMA20, setShowSMA20] = useState(true);
   const [showSMA50, setShowSMA50] = useState(true);
@@ -27,21 +118,138 @@ export const AdvancedChartsView: React.FC = () => {
   const currentAsset = assets.find((a) => a.symbol === selectedSymbol) || assets[0];
   const isPositive = currentAsset.change24h >= 0;
 
-  // Generate candle data
-  const candles: CandlePoint[] = generateAssetCandles(currentAsset.price, timeframe);
+  // Determines whether the active timeframe is Intraday/Real-time or Historical Static
+  const isRealtime = timeframe === '24h' || timeframe === '1D';
 
-  // Calculate Simple Moving Averages
-  const calculateSMA = (period: number) => {
+  // In-memory series cache to prevent duplicate instances or memory re-allocations
+  const seriesCacheRef = useRef<Map<string, CandlePoint[]>>(new Map());
+
+  // Throttling references
+  const lastThrottleTimeRef = useRef<number>(0);
+  const pendingThrottleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const THROTTLE_INTERVAL_MS = 3500; // 3.5 seconds throttle limit
+
+  // State: Throttled, stable candle points
+  const [candles, setCandles] = useState<CandlePoint[]>(() =>
+    buildDeterministicSeries(selectedSymbol, timeframe, currentAsset.price)
+  );
+
+  // 1. Synchronize series whenever asset symbol or timeframe changes
+  useEffect(() => {
+    // Clear any pending throttle timers to prevent memory leaks or crossed updates
+    if (pendingThrottleTimeoutRef.current) {
+      clearTimeout(pendingThrottleTimeoutRef.current);
+      pendingThrottleTimeoutRef.current = null;
+    }
+
+    const cacheKey = `${selectedSymbol}_${timeframe}`;
+    let cached = seriesCacheRef.current.get(cacheKey);
+
+    if (!cached) {
+      cached = buildDeterministicSeries(selectedSymbol, timeframe, currentAsset.price);
+      seriesCacheRef.current.set(cacheKey, cached);
+    }
+
+    // Set cloned data to ensure clean reactive render
+    setCandles(cached.map((c) => ({ ...c })));
+    lastThrottleTimeRef.current = Date.now();
+  }, [selectedSymbol, timeframe]);
+
+  // 2. Controlled Throttling for Real-Time Updates (24h / 1D only)
+  // Historical timeframes (5D, 1M, 6M, 1A) remain 100% STATIC.
+  useEffect(() => {
+    if (!isRealtime) return;
+
+    const now = Date.now();
+    const elapsed = now - lastThrottleTimeRef.current;
+
+    const applyThrottledPrice = (newPrice: number) => {
+      setCandles((prev) => {
+        if (!prev || prev.length === 0) return prev;
+        const lastIdx = prev.length - 1;
+        const last = prev[lastIdx];
+        if (last.close === newPrice) return prev;
+
+        const updatedLast: CandlePoint = {
+          ...last,
+          close: Number(newPrice.toFixed(2)),
+          high: Number(Math.max(last.high, newPrice).toFixed(2)),
+          low: Number(Math.min(last.low, newPrice).toFixed(2)),
+        };
+
+        const next = [...prev];
+        next[lastIdx] = updatedLast;
+        return next;
+      });
+      lastThrottleTimeRef.current = Date.now();
+    };
+
+    if (elapsed >= THROTTLE_INTERVAL_MS) {
+      applyThrottledPrice(currentAsset.price);
+    } else {
+      if (!pendingThrottleTimeoutRef.current) {
+        pendingThrottleTimeoutRef.current = setTimeout(() => {
+          pendingThrottleTimeoutRef.current = null;
+          applyThrottledPrice(currentAsset.price);
+        }, THROTTLE_INTERVAL_MS - elapsed);
+      }
+    }
+
+    return () => {
+      if (pendingThrottleTimeoutRef.current) {
+        clearTimeout(pendingThrottleTimeoutRef.current);
+        pendingThrottleTimeoutRef.current = null;
+      }
+    };
+  }, [currentAsset.price, isRealtime]);
+
+  // 3. Smooth Intraday Pulse (every 4s) exclusively for 24h / 1D (zero jitter, single active bar only)
+  useEffect(() => {
+    if (!isRealtime) return;
+
+    const interval = setInterval(() => {
+      setCandles((prev) => {
+        if (!prev || prev.length === 0) return prev;
+        const lastIdx = prev.length - 1;
+        const last = prev[lastIdx];
+        // Micro-oscillation of +/- 0.05% strictly on the active bar
+        const microDelta = (Math.random() - 0.49) * (last.close * 0.0006);
+        const newClose = Number((last.close + microDelta).toFixed(2));
+
+        const updatedLast: CandlePoint = {
+          ...last,
+          close: newClose,
+          high: Number(Math.max(last.high, newClose).toFixed(2)),
+          low: Number(Math.min(last.low, newClose).toFixed(2)),
+        };
+
+        const next = [...prev];
+        next[lastIdx] = updatedLast;
+        return next;
+      });
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [isRealtime, selectedSymbol, timeframe]);
+
+  // Calculate Simple Moving Averages memoized to avoid redundant recalculations
+  const sma20 = useMemo(() => {
     return candles.map((c, idx, arr) => {
-      if (idx < period - 1) return null;
-      const slice = arr.slice(idx - period + 1, idx + 1);
+      if (idx < 4) return null;
+      const slice = arr.slice(idx - 4, idx + 1);
       const sum = slice.reduce((acc, curr) => acc + curr.close, 0);
-      return sum / period;
+      return sum / 5;
     });
-  };
+  }, [candles]);
 
-  const sma20 = calculateSMA(5);
-  const sma50 = calculateSMA(10);
+  const sma50 = useMemo(() => {
+    return candles.map((c, idx, arr) => {
+      if (idx < 9) return null;
+      const slice = arr.slice(idx - 9, idx + 1);
+      const sum = slice.reduce((acc, curr) => acc + curr.close, 0);
+      return sum / 10;
+    });
+  }, [candles]);
 
   // Sizing for responsive SVG canvas
   const svgWidth = 840;
@@ -51,39 +259,44 @@ export const AdvancedChartsView: React.FC = () => {
   const chartW = svgWidth - paddingX * 2;
   const chartH = svgHeight - paddingY * 2 - (showVolume ? 60 : 0);
 
-  const minVal = Math.min(...candles.map((c) => c.low));
-  const maxVal = Math.max(...candles.map((c) => c.high));
+  const minVal = useMemo(() => Math.min(...candles.map((c) => c.low)), [candles]);
+  const maxVal = useMemo(() => Math.max(...candles.map((c) => c.high)), [candles]);
   const range = maxVal - minVal || 1;
-  const maxVol = Math.max(...candles.map((c) => c.volume)) || 1;
+  const maxVol = useMemo(() => Math.max(...candles.map((c) => c.volume)) || 1, [candles]);
 
   const getY = (val: number) => {
     return paddingY + chartH - ((val - minVal) / range) * chartH;
   };
 
   const getX = (idx: number) => {
-    return paddingX + (idx / (candles.length - 1)) * chartW;
+    return paddingX + (idx / Math.max(1, candles.length - 1)) * chartW;
   };
 
-  const linePath = candles.reduce((acc, c, idx) => {
-    const x = getX(idx);
-    const y = getY(c.close);
-    return `${acc} ${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
-  }, '');
+  const linePath = useMemo(() => {
+    return candles.reduce((acc, c, idx) => {
+      const x = getX(idx);
+      const y = getY(c.close);
+      return `${acc} ${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
+    }, '');
+  }, [candles, minVal, maxVal, range]);
 
-  // SMA paths
-  const sma20Path = sma20.reduce((acc, val, idx) => {
-    if (val === null) return acc;
-    const x = getX(idx);
-    const y = getY(val);
-    return `${acc} ${acc === '' ? 'M' : 'L'} ${x} ${y}`;
-  }, '');
+  const sma20Path = useMemo(() => {
+    return sma20.reduce((acc, val, idx) => {
+      if (val === null) return acc;
+      const x = getX(idx);
+      const y = getY(val);
+      return `${acc} ${acc === '' ? 'M' : 'L'} ${x} ${y}`;
+    }, '');
+  }, [sma20, minVal, maxVal, range]);
 
-  const sma50Path = sma50.reduce((acc, val, idx) => {
-    if (val === null) return acc;
-    const x = getX(idx);
-    const y = getY(val);
-    return `${acc} ${acc === '' ? 'M' : 'L'} ${x} ${y}`;
-  }, '');
+  const sma50Path = useMemo(() => {
+    return sma50.reduce((acc, val, idx) => {
+      if (val === null) return acc;
+      const x = getX(idx);
+      const y = getY(val);
+      return `${acc} ${acc === '' ? 'M' : 'L'} ${x} ${y}`;
+    }, '');
+  }, [sma50, minVal, maxVal, range]);
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
@@ -95,7 +308,7 @@ export const AdvancedChartsView: React.FC = () => {
             <span>Terminal Gráfico Avançado & Análise Técnica</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Visualização de velas japonesas, médias móveis (SMA) e indicadores para tomada de decisão.
+            Visualização institucional de velas japonesas, médias móveis (SMA) e indicadores técnicos sem jitter.
           </p>
         </div>
 
@@ -105,7 +318,7 @@ export const AdvancedChartsView: React.FC = () => {
           <select
             value={selectedSymbol}
             onChange={(e) => setSelectedSymbol(e.target.value)}
-            className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-emerald-500 shadow-sm"
+            className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-emerald-500 shadow-sm cursor-pointer"
           >
             {assets.map((a) => (
               <option key={a.id} value={a.symbol}>
@@ -126,6 +339,17 @@ export const AdvancedChartsView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="text-lg font-black text-white">{currentAsset.symbol}</span>
                 <span className="text-xs text-slate-400 font-medium">{currentAsset.name}</span>
+                {isRealtime ? (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Tempo Real (Throttled 3.5s)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                    <ShieldCheck className="w-3 h-3 text-sky-400" />
+                    Histórico Estático
+                  </span>
+                )}
               </div>
               <div className="flex flex-wrap items-baseline gap-2.5 text-xs font-mono-numbers mt-0.5">
                 <span className="text-xl font-bold text-white">
@@ -149,9 +373,9 @@ export const AdvancedChartsView: React.FC = () => {
 
           {/* Timeframe & Mode Controls */}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Timeframe buttons */}
+            {/* Timeframe buttons: 24h, 1D, 5D, 1M, 6M, 1A */}
             <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5 text-xs">
-              {(['1D', '5D', '1M', '6M', '1A'] as const).map((tf) => (
+              {(['24h', '1D', '5D', '1M', '6M', '1A'] as const).map((tf) => (
                 <button
                   key={tf}
                   onClick={() => setTimeframe(tf)}
@@ -279,6 +503,7 @@ export const AdvancedChartsView: React.FC = () => {
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                className="transition-all duration-300 ease-out"
               />
             ) : (
               candles.map((c, i) => {
@@ -293,7 +518,7 @@ export const AdvancedChartsView: React.FC = () => {
                 const candleW = Math.max(4, chartW / candles.length - 3);
 
                 return (
-                  <g key={i}>
+                  <g key={i} className="transition-all duration-300 ease-out">
                     {/* Upper/Lower Wick */}
                     <line
                       x1={x}
@@ -325,6 +550,7 @@ export const AdvancedChartsView: React.FC = () => {
                 stroke="#F59E0B"
                 strokeWidth="1.8"
                 strokeDasharray="2 1"
+                className="transition-all duration-300 ease-out"
               />
             )}
 
@@ -335,6 +561,7 @@ export const AdvancedChartsView: React.FC = () => {
                 fill="none"
                 stroke="#38BDF8"
                 strokeWidth="1.8"
+                className="transition-all duration-300 ease-out"
               />
             )}
 
