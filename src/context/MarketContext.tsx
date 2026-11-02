@@ -224,31 +224,27 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setStoredFinnhubKey(key);
   }, []);
 
-  // Fetch live market data across all integrated APIs (AwesomeAPI, Finnhub, FMP, Binance, Brapi)
+  // Fetch live market data across all integrated APIs (AwesomeAPI, Finnhub, FMP, Coinbase, Yahoo Finance)
   const refreshData = useCallback(async () => {
     try {
-      setAssets((prevAssets) => {
-        fetchCompleteLiveMarketData(prevAssets)
-          .then((snapshot) => {
-            setUniversalRates(snapshot.rates);
-            setAssets(snapshot.updatedAssets);
-            if (snapshot.news && snapshot.news.length > 0) {
-              setNews(snapshot.news);
-            }
-            if (snapshot.sourceSummary) {
-              setApiSourceSummary(snapshot.sourceSummary);
-            }
-            setLastUpdated(new Date());
-          })
-          .catch((err) => {
-            console.warn('[DinhEuro] Erro ao sincronizar mercado em tempo real:', err);
-          });
-        return prevAssets;
-      });
+      const snapshot = await fetchCompleteLiveMarketData(assets);
+      if (snapshot.rates) {
+        setUniversalRates(snapshot.rates);
+      }
+      if (snapshot.updatedAssets && snapshot.updatedAssets.length > 0) {
+        setAssets(snapshot.updatedAssets);
+      }
+      if (snapshot.news && snapshot.news.length > 0) {
+        setNews(snapshot.news);
+      }
+      if (snapshot.sourceSummary) {
+        setApiSourceSummary(snapshot.sourceSummary);
+      }
+      setLastUpdated(new Date());
     } catch (err) {
-      console.warn('[DinhEuro] Refresh data warning:', err);
+      console.warn('[DinhEuro] Erro ao sincronizar mercado em tempo real:', err);
     }
-  }, []);
+  }, [assets]);
 
   // Periodic heartbeat every 10 seconds for active real-time market updates
   useEffect(() => {

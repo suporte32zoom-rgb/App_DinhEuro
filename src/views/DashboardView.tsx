@@ -37,6 +37,8 @@ export const DashboardView: React.FC = () => {
   const topStocks = assets.filter((a) => a.category === 'stocks_us' || a.category === 'stocks_br');
   const cryptos = assets.filter((a) => a.category === 'crypto');
   const commodities = assets.filter((a) => a.category === 'commodities');
+  const sp500Asset = assets.find((a) => a.id === 'sp500' || a.symbol === 'S&P 500');
+  const ibovAsset = assets.find((a) => a.id === 'ibovespa' || a.symbol === 'IBOVESPA');
 
   // Sorted Gainers and Losers
   const topGainers = [...topStocks].sort((a, b) => b.change24h - a.change24h).slice(0, 4);
@@ -117,9 +119,13 @@ export const DashboardView: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 uppercase font-medium">S&P 500</span>
-                  <span className="text-[9px] text-slate-400 font-semibold">Gráfico ↗</span>
+                  <span className={`text-[9px] font-semibold ${(sp500Asset?.change24h || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {(sp500Asset?.change24h || 0) >= 0 ? '+' : ''}{(sp500Asset?.change24h || 0).toFixed(2)}%
+                  </span>
                 </div>
-                <p className="text-sm font-bold font-mono-numbers text-slate-200">5.864,67</p>
+                <p className="text-sm font-bold font-mono-numbers text-slate-200">
+                  {sp500Asset?.price ? sp500Asset.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '7.580,07'}
+                </p>
               </div>
 
               <div
@@ -133,9 +139,13 @@ export const DashboardView: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 uppercase font-medium">IBOVESPA</span>
-                  <span className="text-[9px] text-emerald-400 font-semibold">Gráfico ↗</span>
+                  <span className={`text-[9px] font-semibold ${(ibovAsset?.change24h || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {(ibovAsset?.change24h || 0) >= 0 ? '+' : ''}{(ibovAsset?.change24h || 0).toFixed(2)}%
+                  </span>
                 </div>
-                <p className="text-sm font-bold font-mono-numbers text-emerald-400">130.845 pts</p>
+                <p className="text-sm font-bold font-mono-numbers text-emerald-400">
+                  {ibovAsset?.price ? `${Math.round(ibovAsset.price).toLocaleString('pt-BR')} pts` : '167.922 pts'}
+                </p>
               </div>
             </div>
           </div>
