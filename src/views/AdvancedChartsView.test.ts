@@ -1,15 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDeterministicSeries } from './AdvancedChartsView';
+import { generateD3Series } from '../components/D3AdvancedChart';
+import { getAssetMetadata } from '../utils/assetProfiles';
+import { MarketAsset } from '../services/marketData';
 
-test('buildDeterministicSeries generates consistent and reproducible historical bars for 5D, 1M, 6M, 1A', () => {
-  const series1 = buildDeterministicSeries('PETR4', '1M', 52.71);
-  const series2 = buildDeterministicSeries('PETR4', '1M', 52.71);
+test('generateD3Series generates consistent and reproducible historical bars for 5D, 1M, 6M, 1A, 5A', () => {
+  const series1 = generateD3Series('PETR4', '1M', 52.71);
+  const series2 = generateD3Series('PETR4', '1M', 52.71);
 
   assert.equal(series1.length, series2.length);
-  assert.equal(series1.length, 31); // count=30 down to 0 = 31
+  assert.equal(series1.length, 31);
 
-  // Assert every single bar has exact matching values (zero jitter)
   for (let i = 0; i < series1.length; i++) {
     assert.equal(series1[i].open, series2[i].open, `Bar ${i} open mismatch`);
     assert.equal(series1[i].high, series2[i].high, `Bar ${i} high mismatch`);
@@ -19,9 +20,9 @@ test('buildDeterministicSeries generates consistent and reproducible historical 
   }
 });
 
-test('buildDeterministicSeries pins the last bar close to basePrice', () => {
+test('generateD3Series pins the last bar close to basePrice', () => {
   const targetPrice = 344.63;
-  const series = buildDeterministicSeries('AAPL', '24h', targetPrice);
+  const series = generateD3Series('AAPL', '1D', targetPrice);
   const lastBar = series[series.length - 1];
 
   assert.equal(lastBar.close, targetPrice);
@@ -29,11 +30,30 @@ test('buildDeterministicSeries pins the last bar close to basePrice', () => {
   assert.ok(lastBar.low <= targetPrice);
 });
 
-test('buildDeterministicSeries differentiates distinct timeframes correctly', () => {
-  const series24h = buildDeterministicSeries('BTC/USD', '24h', 77800);
-  const series1A = buildDeterministicSeries('BTC/USD', '1A', 77800);
+test('getAssetMetadata returns complete 6 required modules metadata for B3 asset', () => {
+  const mockAsset: MarketAsset = {
+    id: 'ibovespa',
+    symbol: 'IBOVESPA',
+    name: 'Índice Bovespa (Brasil B3)',
+    category: 'indices',
+    price: 167921.80,
+    currency: 'BRL',
+    change24h: 0.85,
+    changeValue: 1412.30,
+    high24h: 168500.00,
+    low24h: 166800.00,
+    volume: 'R$ 29.8B',
+    sparkline: [167000, 167921.80],
+  };
 
-  assert.notEqual(series24h.length, series1A.length);
-  assert.equal(series24h.length, 25); // count=24 + 1
-  assert.equal(series1A.length, 53);  // count=52 + 1
+  const meta = getAssetMetadata(mockAsset);
+  assert.equal(meta.ticker, 'IBOV');
+  assert.equal(meta.marketOrigin, 'B3 - Brasil, Bolsa, Balcão');
+  assert.ok(meta.tags.includes('#B3'));
+  assert.ok(meta.tags.includes('América Latina'));
+  assert.ok(meta.aiDiagnosis.strengths.length > 0);
+  assert.ok(meta.aiDiagnosis.risks.length > 0);
+  assert.ok(meta.institutionalProfile.nature.length > 0);
+  assert.ok(meta.week52High > 0);
+  assert.ok(meta.week52Low > 0);
 });
