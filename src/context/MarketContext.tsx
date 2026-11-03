@@ -33,7 +33,47 @@ export type NavigationTab =
   | 'graficos'
   | 'ferramentas'
   | 'academy'
-  | 'sobre';
+  | 'sobre'
+  | 'termos'
+  | 'privacidade'
+  | 'cookies'
+  | 'disclaimer';
+
+export const TAB_ROUTE_MAP: Record<NavigationTab, string> = {
+  dashboard: '/',
+  mercados: '/mercados',
+  carteiras: '/carteiras',
+  noticias: '/noticias',
+  corretoras: '/corretoras',
+  graficos: '/graficos',
+  ferramentas: '/ferramentas',
+  academy: '/academy',
+  sobre: '/sobre',
+  termos: '/termos-de-uso',
+  privacidade: '/politica-de-privacidade',
+  cookies: '/politica-de-cookies',
+  disclaimer: '/disclaimer',
+};
+
+export const ROUTE_TAB_MAP: Record<string, NavigationTab> = {
+  '/': 'dashboard',
+  '/mercados': 'mercados',
+  '/carteiras': 'carteiras',
+  '/noticias': 'noticias',
+  '/corretoras': 'corretoras',
+  '/graficos': 'graficos',
+  '/ferramentas': 'ferramentas',
+  '/academy': 'academy',
+  '/sobre': 'sobre',
+  '/termos-de-uso': 'termos',
+  '/termos': 'termos',
+  '/politica-de-privacidade': 'privacidade',
+  '/privacidade': 'privacidade',
+  '/politica-de-cookies': 'cookies',
+  '/cookies': 'cookies',
+  '/disclaimer': 'disclaimer',
+  '/aviso-legal': 'disclaimer',
+};
 
 export type ThemeMode = 'dark' | 'light';
 
@@ -114,7 +154,21 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [assets, setAssets] = useState<MarketAsset[]>(INITIAL_ASSETS);
   const [universalRates, setUniversalRates] = useState<UniversalRates>(DEFAULT_UNIVERSAL_RATES);
   const [news, setNews] = useState<NewsItem[]>(INITIAL_NEWS);
-  const [activeTab, setActiveTabState] = useState<NavigationTab>('dashboard');
+  // Active Tab State with URL routing support
+  const [activeTab, setActiveTabState] = useState<NavigationTab>(() => {
+    if (typeof window === 'undefined') return 'dashboard';
+    const path = window.location.pathname.toLowerCase();
+    if (ROUTE_TAB_MAP[path]) {
+      return ROUTE_TAB_MAP[path];
+    }
+    // Also check hash
+    const hash = window.location.hash.replace('#', '').toLowerCase();
+    if (hash && ROUTE_TAB_MAP['/' + hash]) {
+      return ROUTE_TAB_MAP['/' + hash];
+    }
+    return 'dashboard';
+  });
+
   const [selectedAsset, setSelectedAsset] = useState<MarketAsset | null>(null);
   const [finnhubKey, setFinnhubKey] = useState<string>(getStoredFinnhubKey());
   const [isLiveUpdating, setIsLiveUpdating] = useState<boolean>(true);
@@ -193,8 +247,36 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [portfolio]);
 
+  // Listen to popstate for browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.toLowerCase();
+      if (ROUTE_TAB_MAP[path]) {
+        setActiveTabState(ROUTE_TAB_MAP[path]);
+      } else {
+        const hash = window.location.hash.replace('#', '').toLowerCase();
+        if (hash && ROUTE_TAB_MAP['/' + hash]) {
+          setActiveTabState(ROUTE_TAB_MAP['/' + hash]);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const setActiveTab = useCallback((tab: NavigationTab) => {
     setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      const targetRoute = TAB_ROUTE_MAP[tab] || '/';
+      if (window.location.pathname !== targetRoute) {
+        try {
+          window.history.pushState(null, '', targetRoute);
+        } catch {
+          // ignore in environments with restricted history
+        }
+      }
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 

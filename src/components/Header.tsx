@@ -121,7 +121,7 @@ export const Header: React.FC = () => {
             <img
               src="/logo.png"
               alt="DinhEuro Logo"
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover shadow-lg shadow-emerald-950/50 group-hover:scale-105 transition duration-200 border-2 border-amber-400/30"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-contain shadow-lg shadow-emerald-950/50 group-hover:scale-105 transition duration-200 border-2 border-amber-400/30 bg-white/5"
             />
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#0B1320] rounded-full"></span>
           </div>

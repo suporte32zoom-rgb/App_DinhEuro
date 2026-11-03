@@ -20,6 +20,11 @@ import { AdvancedChartsView } from './views/AdvancedChartsView';
 import { ToolsView } from './views/ToolsView';
 import { AcademyView } from './views/AcademyView';
 import { AboutView } from './views/AboutView';
+import { TermsOfUseView } from './views/TermsOfUseView';
+import { PrivacyPolicyView } from './views/PrivacyPolicyView';
+import { CookiePolicyView } from './views/CookiePolicyView';
+import { DisclaimerView } from './views/DisclaimerView';
+import { LgpdConsentBanner } from './components/LgpdConsentBanner';
 
 const MainContent: React.FC = () => {
   const { activeTab } = useMarket();
@@ -35,6 +40,10 @@ const MainContent: React.FC = () => {
       {activeTab === 'ferramentas' && <ToolsView />}
       {activeTab === 'academy' && <AcademyView />}
       {activeTab === 'sobre' && <AboutView />}
+      {activeTab === 'termos' && <TermsOfUseView />}
+      {activeTab === 'privacidade' && <PrivacyPolicyView />}
+      {activeTab === 'cookies' && <CookiePolicyView />}
+      {activeTab === 'disclaimer' && <DisclaimerView />}
     </main>
   );
 };
@@ -64,6 +73,9 @@ const AppShell: React.FC = () => {
 
       {/* Institutional Footer */}
       <Footer />
+
+      {/* LGPD & Cookie Consent Persistent Banner */}
+      <LgpdConsentBanner />
     </div>
   );
 };

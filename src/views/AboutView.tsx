@@ -9,89 +9,135 @@ import {
   Mail,
   Cpu,
   Lock,
+  ArrowRight,
+  TrendingUp,
+  Compass,
+  Award,
 } from 'lucide-react';
+import { useMarket } from '../context/MarketContext';
 
 export const AboutView: React.FC = () => {
+  const { setActiveTab } = useMarket();
+
   return (
-    <div className="space-y-8 pb-12 animate-in fade-in duration-300">
-      {/* Brand Hero */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0c1a30] via-[#091120] to-[#060a12] border border-slate-700/80 p-6 sm:p-10 shadow-2xl text-center flex flex-col items-center">
-        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400/40 p-1 mb-5 shadow-2xl shadow-emerald-950/60 bg-white/5">
+    <div className="space-y-8 pb-16 max-w-4xl mx-auto animate-in fade-in duration-300">
+      {/* Brand Hero with New Official Logo */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0c1a30] via-[#091120] to-[#060a12] border border-slate-700/80 p-8 sm:p-12 shadow-2xl text-center flex flex-col items-center">
+        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-amber-400/50 p-1.5 mb-5 shadow-2xl shadow-emerald-950/80 bg-white/5 transition-transform hover:scale-105 duration-300">
           <img
             src="/logo.png"
-            alt="DinhEuro Logo Oficial"
-            className="w-full h-full object-cover rounded-full"
+            alt="Novo Logo Oficial DinhEuro"
+            className="w-full h-full object-contain rounded-full"
           />
         </div>
 
         <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
           Dinh<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-400">Euro</span>
         </h1>
-        <p className="text-xs sm:text-sm font-semibold text-emerald-400 tracking-widest uppercase mt-1">
-          dinheuro.com • Hub Financeiro Global
+        <p className="text-xs sm:text-sm font-bold text-emerald-400 tracking-widest uppercase mt-1">
+          dinheuro.com • Hub Financeiro Global & Mercados
         </p>
 
         <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mt-4 leading-relaxed">
-          O <strong>DinhEuro</strong> é a plataforma definitiva de inteligência e acompanhamento financeiro global, desenhada para investidores que pensam além das fronteiras. Unimos a cotação em tempo real de ativos mundiais (Wall Street, B3, Europa e Ásia), câmbio comercial unificado, criptomoedas e commodities no mais alto rigor institucional.
+          O <strong>DinhEuro</strong> nasceu com a missão primordial de democratizar a informação econômica em tempo real e derrubar barreiras cambiais para quem investe, viaja, empreende ou constrói patrimônio entre o Brasil e o exterior.
         </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
+          <button
+            type="button"
+            onClick={() => setActiveTab('mercados')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition shadow-lg cursor-pointer"
+          >
+            <span>Explorar Mercados</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('graficos')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition border border-slate-700 cursor-pointer"
+          >
+            <span>Terminal Gráfico D3 v7</span>
+          </button>
+        </div>
       </div>
 
-      {/* Pillars Grid */}
+      {/* Missão, Visão e Valores */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="rounded-2xl bg-[#0d1627] border border-slate-800 p-6 shadow-xl space-y-3">
+        <div className="rounded-2xl bg-[#0b1322] border border-slate-800 p-6 shadow-xl space-y-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-            <Globe className="w-5 h-5" />
+            <Compass className="w-5 h-5" />
           </div>
-          <h2 className="text-base font-bold text-white">Conexão Brasil & Europa</h2>
+          <h2 className="text-base font-bold text-white">Nossa Missão</h2>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Especializado na ponte econômica entre o Real Brasileiro (R$) e o Euro (€), fornecendo paridades cambiais precisas para remessas, planejamento de cidadania e investimentos no exterior.
+            Democratizar a inteligência econômica global através de ferramentas analíticas, simulações instantâneas e cotações transparentes sem paywall ou jargões inacessíveis.
           </p>
         </div>
 
-        <div className="rounded-2xl bg-[#0d1627] border border-slate-800 p-6 shadow-xl space-y-3">
+        <div className="rounded-2xl bg-[#0b1322] border border-slate-800 p-6 shadow-xl space-y-3">
           <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-            <Zap className="w-5 h-5" />
+            <TrendingUp className="w-5 h-5" />
           </div>
-          <h2 className="text-base font-bold text-white">Motor de Dados Finnhub</h2>
+          <h2 className="text-base font-bold text-white">Visão Global</h2>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Arquitetura de dados orientada à baixa latência via <strong>Finnhub API</strong> e <strong>Banco Central Europeu</strong>. Rejeição integral de APIs obsoletas ou com atrasos (Zero AwesomeAPI).
+            Ser a principal referência em paridade Euro-Real e acompanhamento de carteiras multinacionais para brasileiros em qualquer lugar do mundo.
           </p>
         </div>
 
-        <div className="rounded-2xl bg-[#0d1627] border border-slate-800 p-6 shadow-xl space-y-3">
+        <div className="rounded-2xl bg-[#0b1322] border border-slate-800 p-6 shadow-xl space-y-3">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-            <Cpu className="w-5 h-5" />
+            <Award className="w-5 h-5" />
           </div>
-          <h2 className="text-base font-bold text-white">Progressive Web App (PWA)</h2>
+          <h2 className="text-base font-bold text-white">Valores & Compliance</h2>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Instalável como aplicativo nativo no Windows, Mac, Android e iOS. Cache inteligente offline, carregamento instantâneo e preparado para deploy na Hostinger.
+            Transparência regulatória irrestrita, respeito à LGPD e integridade tecnológica em conformidade com as diretrizes do Banco Central do Brasil.
           </p>
         </div>
       </div>
 
-      {/* Hostinger & Production Ready Specifications */}
-      <div className="rounded-2xl bg-[#0d1627] border border-slate-800 p-6 shadow-xl space-y-4">
+      {/* Pilares Tecnológicos */}
+      <div className="rounded-2xl bg-[#0b1322] border border-slate-800 p-6 sm:p-8 shadow-xl space-y-4">
         <h2 className="text-base font-bold text-white flex items-center gap-2">
           <Server className="w-5 h-5 text-emerald-400" />
-          <span>Pronto para Deploy em Produção (Hostinger)</span>
+          <span>Infraestrutura Tecnológica e Arquitetura PWA</span>
         </h2>
-        <p className="text-xs text-slate-300 leading-relaxed">
-          O DinhEuro foi estruturado para ser exportado via <code className="bg-slate-900 px-2 py-0.5 rounded text-emerald-400 font-mono">npm run build</code> e publicado diretamente no Gerenciador de Arquivos ou Git da <strong>Hostinger (Plano Cloud ou Hospedagem Compartilhada)</strong> com suporte total a HTTPS, service workers e rotas amigáveis SPA via <code className="bg-slate-900 px-2 py-0.5 rounded text-amber-400 font-mono">.htaccess</code>.
+        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          O DinhEuro é construído sob arquitetura <strong>Progressive Web App (PWA)</strong> de alta performance, projetado para deploy resiliente na <strong>Hostinger</strong>. Ele combina:
         </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <span className="text-xs font-bold text-emerald-400 block">• Motor Gráfico Institucional D3 v7</span>
+            <p className="text-xs text-slate-400">Renderização vetorial SVG sem trepidação, médias móveis SMA 20/50, volume e velas japonesas de alta precisão.</p>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <span className="text-xs font-bold text-blue-400 block">• Caching Inteligente & Modo Offline</span>
+            <p className="text-xs text-slate-400">Service workers Workbox para acesso instantâneo ao aplicativo mesmo em conexões lentas ou instáveis.</p>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <span className="text-xs font-bold text-amber-400 block">• Agregação Multiprovedor em Tempo Real</span>
+            <p className="text-xs text-slate-400">Sincronização com Finnhub, Banco Central Europeu, Binance e Brapi para cobertura 360º de mercados.</p>
+          </div>
+          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <span className="text-xs font-bold text-purple-400 block">• Privacidade Local (Zero Tracking de Carteira)</span>
+            <p className="text-xs text-slate-400">As carteiras e ativos do usuário permanecem exclusivamente gravados no localStorage do dispositivo.</p>
+          </div>
+        </div>
       </div>
 
-      {/* Legal & Terms of Use */}
-      <div className="rounded-2xl bg-[#0d1627] border border-slate-800 p-6 shadow-xl space-y-4 text-xs text-slate-400 leading-relaxed">
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-          <FileText className="w-4 h-4 text-slate-300" />
-          <span>Aviso Legal & Termos de Uso</span>
-        </h2>
-        <p>
-          O DinhEuro (dinheuro.com) é uma plataforma de conteúdo informativo, ferramentas analíticas e agregação de dados públicos do mercado de capitais. As cotações, simuladores e análises apresentadas não constituem oferta, solicitação de compra ou recomendação de investimento personalizada. Investimentos em valores mobiliários, moedas e criptomoedas envolvem risco de perda patrimonial. Recomendamos a consulta a profissionais certificados antes de tomar decisões financeiras.
-        </p>
-        <p className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-500">
-          © {new Date().getFullYear()} DinhEuro (dinheuro.com). Todos os direitos reservados.
-        </p>
+      {/* Contato e Governança */}
+      <div className="rounded-2xl bg-[#0b1322] border border-slate-800 p-6 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-bold text-white">Canal Institucional & Imprensa</h3>
+          <p className="text-xs text-slate-400">
+            Para parcerias, sugestões de integração ou questões regulatórias:
+          </p>
+        </div>
+        <a
+          href="mailto:admin@dinheuro.com.br"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs transition border border-slate-700 cursor-pointer shrink-0"
+        >
+          <Mail className="w-4 h-4 text-emerald-400" />
+          <span>admin@dinheuro.com.br</span>
+        </a>
       </div>
     </div>
   );
