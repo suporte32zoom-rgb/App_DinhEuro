@@ -54,7 +54,7 @@ async function startServer() {
     });
   });
 
-  // Real-time Aggregated Market Data API (Finnhub, AwesomeAPI, FMP, Binance, Brapi)
+  // Real-time Aggregated Market Data API (Finnhub, AwesomeAPI, FMP, Coinbase, Yahoo Finance)
   app.get('/api/market/live', async (_req: Request, res: Response) => {
     try {
       const data = await getAggregatedMarketData();
@@ -62,6 +62,28 @@ async function startServer() {
     } catch (err) {
       console.error('[DinhEuro] Erro ao agregar dados de mercado:', err);
       res.status(500).json({ error: 'Erro ao obter dados de mercado em tempo real' });
+    }
+  });
+
+  // Proxy endpoint for AwesomeAPI Economy to avoid browser CORS blocks
+  app.get('/api/awesomeapi/last', async (_req: Request, res: Response) => {
+    try {
+      const awesomeUrl =
+        process.env.VITE_AWESOME_ECONOMY_URL ||
+        'https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL,ETH-BRL,CAD-BRL,AUD-BRL,CHF-BRL,JPY-BRL,CNY-BRL';
+      const response = await fetch(awesomeUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) DinhEuro/3.0',
+          'Accept': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return res.json(data);
+      }
+      return res.status(response.status).json({ error: 'AwesomeAPI upstream rate limit' });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
     }
   });
 

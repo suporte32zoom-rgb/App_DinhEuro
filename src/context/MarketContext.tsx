@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   MarketAsset,
   NewsItem,
@@ -174,7 +174,12 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isLiveUpdating, setIsLiveUpdating] = useState<boolean>(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [displayCurrency, setDisplayCurrency] = useState<'BRL' | 'EUR' | 'USD'>('BRL');
-  const [apiSourceSummary, setApiSourceSummary] = useState<string>('AwesomeAPI, Finnhub, Binance, Brapi');
+  const [apiSourceSummary, setApiSourceSummary] = useState<string>('Yahoo Finance • CoinGecko • Coinbase • BCE');
+
+  const assetsRef = useRef<MarketAsset[]>(assets);
+  useEffect(() => {
+    assetsRef.current = assets;
+  }, [assets]);
 
   // Theme State: persisted in localStorage ('dark' or 'light')
   const [theme, setThemeState] = useState<ThemeMode>(() => {
@@ -306,10 +311,10 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setStoredFinnhubKey(key);
   }, []);
 
-  // Fetch live market data across all integrated APIs (AwesomeAPI, Finnhub, FMP, Coinbase, Yahoo Finance)
+  // Fetch live market data across all integrated APIs (Yahoo Finance, Coinbase, CoinGecko, BCE, Finnhub)
   const refreshData = useCallback(async () => {
     try {
-      const snapshot = await fetchCompleteLiveMarketData(assets);
+      const snapshot = await fetchCompleteLiveMarketData(assetsRef.current);
       if (snapshot.rates) {
         setUniversalRates(snapshot.rates);
       }
@@ -326,7 +331,7 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err) {
       console.warn('[DinhEuro] Erro ao sincronizar mercado em tempo real:', err);
     }
-  }, [assets]);
+  }, []);
 
   // Periodic heartbeat every 10 seconds for active real-time market updates
   useEffect(() => {

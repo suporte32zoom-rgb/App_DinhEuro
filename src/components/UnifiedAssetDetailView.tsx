@@ -282,7 +282,10 @@ export const UnifiedAssetDetailView: React.FC<UnifiedAssetDetailViewProps> = ({
             <p className="text-base sm:text-lg font-bold font-mono-numbers text-white">
               {asset.currency === 'BRL' ? 'R$' : '$'} {meta.openPrice.toFixed(2)}
             </p>
-            <span className="text-[10px] text-slate-500 font-medium">Preço na abertura do pregão</span>
+            <p className="text-[10px] font-mono-numbers text-emerald-400/90 font-medium">
+              {asset.currency === 'BRL' ? `≈ $ ${(meta.openPrice / universalRates.BRL).toFixed(2)}` : `≈ R$ ${(meta.openPrice * universalRates.BRL).toFixed(2)}`}
+            </p>
+            <span className="text-[9px] text-slate-500 font-medium block">Preço na abertura do pregão</span>
           </div>
 
           {/* 2. Máxima do Dia */}
@@ -291,7 +294,10 @@ export const UnifiedAssetDetailView: React.FC<UnifiedAssetDetailViewProps> = ({
             <p className="text-base sm:text-lg font-bold font-mono-numbers text-emerald-400">
               {asset.currency === 'BRL' ? 'R$' : '$'} {asset.high24h.toFixed(2)}
             </p>
-            <span className="text-[10px] text-slate-500 font-medium">Pico nas últimas 24h</span>
+            <p className="text-[10px] font-mono-numbers text-emerald-400/90 font-medium">
+              {asset.currency === 'BRL' ? `≈ $ ${(asset.high24h / universalRates.BRL).toFixed(2)}` : `≈ R$ ${(asset.high24h * universalRates.BRL).toFixed(2)}`}
+            </p>
+            <span className="text-[9px] text-slate-500 font-medium block">Pico nas últimas 24h</span>
           </div>
 
           {/* 3. Mínima do Dia */}
@@ -300,7 +306,10 @@ export const UnifiedAssetDetailView: React.FC<UnifiedAssetDetailViewProps> = ({
             <p className="text-base sm:text-lg font-bold font-mono-numbers text-rose-400">
               {asset.currency === 'BRL' ? 'R$' : '$'} {asset.low24h.toFixed(2)}
             </p>
-            <span className="text-[10px] text-slate-500 font-medium">Vale nas últimas 24h</span>
+            <p className="text-[10px] font-mono-numbers text-rose-300/90 font-medium">
+              {asset.currency === 'BRL' ? `≈ $ ${(asset.low24h / universalRates.BRL).toFixed(2)}` : `≈ R$ ${(asset.low24h * universalRates.BRL).toFixed(2)}`}
+            </p>
+            <span className="text-[9px] text-slate-500 font-medium block">Vale nas últimas 24h</span>
           </div>
 
           {/* 4. Volume Negociado */}
@@ -318,7 +327,10 @@ export const UnifiedAssetDetailView: React.FC<UnifiedAssetDetailViewProps> = ({
             <p className="text-base sm:text-lg font-bold font-mono-numbers text-emerald-300">
               {asset.currency === 'BRL' ? 'R$' : '$'} {meta.week52High.toFixed(2)}
             </p>
-            <span className="text-[10px] text-slate-500 font-medium">Topo anual histórico</span>
+            <p className="text-[10px] font-mono-numbers text-emerald-400/90 font-medium">
+              {asset.currency === 'BRL' ? `≈ $ ${(meta.week52High / universalRates.BRL).toFixed(2)}` : `≈ R$ ${(meta.week52High * universalRates.BRL).toFixed(2)}`}
+            </p>
+            <span className="text-[9px] text-slate-500 font-medium block">Topo anual histórico</span>
           </div>
 
           {/* 6. Mín 52 Semanas */}
@@ -327,7 +339,10 @@ export const UnifiedAssetDetailView: React.FC<UnifiedAssetDetailViewProps> = ({
             <p className="text-base sm:text-lg font-bold font-mono-numbers text-rose-300">
               {asset.currency === 'BRL' ? 'R$' : '$'} {meta.week52Low.toFixed(2)}
             </p>
-            <span className="text-[10px] text-slate-500 font-medium">Fundo anual histórico</span>
+            <p className="text-[10px] font-mono-numbers text-rose-300/90 font-medium">
+              {asset.currency === 'BRL' ? `≈ $ ${(meta.week52Low / universalRates.BRL).toFixed(2)}` : `≈ R$ ${(meta.week52Low * universalRates.BRL).toFixed(2)}`}
+            </p>
+            <span className="text-[9px] text-slate-500 font-medium block">Fundo anual histórico</span>
           </div>
 
           {/* 7. P/L (Preço / Lucro) */}
@@ -387,11 +402,17 @@ export const UnifiedAssetDetailView: React.FC<UnifiedAssetDetailViewProps> = ({
               <span className="text-sm font-bold font-mono-numbers text-rose-400">
                 {asset.currency === 'BRL' ? 'R$' : '$'} {meta.aiDiagnosis.supportLevel.toFixed(2)}
               </span>
+              <span className="text-[10px] font-mono-numbers text-slate-400 block">
+                {asset.currency === 'BRL' ? `≈ $ ${(meta.aiDiagnosis.supportLevel / universalRates.BRL).toFixed(2)}` : `≈ R$ ${(meta.aiDiagnosis.supportLevel * universalRates.BRL).toFixed(2)}`}
+              </span>
             </div>
             <div>
               <span className="text-[10px] text-slate-400 font-bold uppercase block">Resistência Técnica</span>
               <span className="text-sm font-bold font-mono-numbers text-emerald-400">
                 {asset.currency === 'BRL' ? 'R$' : '$'} {meta.aiDiagnosis.resistanceLevel.toFixed(2)}
+              </span>
+              <span className="text-[10px] font-mono-numbers text-slate-400 block">
+                {asset.currency === 'BRL' ? `≈ $ ${(meta.aiDiagnosis.resistanceLevel / universalRates.BRL).toFixed(2)}` : `≈ R$ ${(meta.aiDiagnosis.resistanceLevel * universalRates.BRL).toFixed(2)}`}
               </span>
             </div>
             <div>

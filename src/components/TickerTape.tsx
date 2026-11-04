@@ -35,10 +35,10 @@ export const TickerTape: React.FC = () => {
                   className="flex items-center gap-2 hover:bg-slate-800/60 px-2 py-0.5 rounded transition cursor-pointer flex-shrink-0"
                 >
                   <span className="font-bold text-slate-200">{item.symbol}</span>
-                  <div className="flex items-baseline gap-1 font-mono-numbers">
-                    <span className="text-slate-100 font-semibold">{dual.primaryFormatted}</span>
-                    <span className="text-[10px] text-emerald-400/80 font-medium">
-                      ({dual.secondaryCurrency === 'BRL' ? '≈ ' : '≈ $'}{dual.secondaryFormatted})
+                  <div className="flex items-baseline gap-1.5 font-mono-numbers">
+                    <span className="text-slate-100 font-bold">{dual.primaryFormatted}</span>
+                    <span className="text-[10px] text-emerald-400/90 font-semibold">
+                      (≈ {dual.secondaryFormatted})
                     </span>
                   </div>
                   <span

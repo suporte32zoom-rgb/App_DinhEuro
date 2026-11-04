@@ -57,7 +57,7 @@ export const DashboardView: React.FC = () => {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold mb-3">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Dados Globais em Tempo Real • Finnhub • AwesomeAPI • Binance • Brapi</span>
+                <span>Dados Globais em Tempo Real • Finnhub • Yahoo Finance • CoinGecko • Coinbase • BCE</span>
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
                 Hub Financeiro Global{' '}
@@ -86,7 +86,7 @@ export const DashboardView: React.FC = () => {
                   <span className="text-[9px] text-emerald-400 font-semibold">Gráfico ↗</span>
                 </div>
                 <p className="text-sm font-bold font-mono-numbers text-emerald-400">
-                  R$ {(universalRates.BRL / (universalRates.EUR || 0.922)).toFixed(4)}
+                  R$ {(universalRates.BRL / (universalRates.EUR || 0.8905)).toFixed(4)}
                 </p>
               </div>
 
@@ -124,7 +124,7 @@ export const DashboardView: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-sm font-bold font-mono-numbers text-slate-200">
-                  {sp500Asset?.price ? sp500Asset.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '7.580,07'}
+                  {sp500Asset?.price ? sp500Asset.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '7.688,62'}
                 </p>
               </div>
 
@@ -144,7 +144,7 @@ export const DashboardView: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-sm font-bold font-mono-numbers text-emerald-400">
-                  {ibovAsset?.price ? `${Math.round(ibovAsset.price).toLocaleString('pt-BR')} pts` : '167.922 pts'}
+                  {ibovAsset?.price ? `${Math.round(ibovAsset.price).toLocaleString('pt-BR')} pts` : '167.526 pts'}
                 </p>
               </div>
             </div>

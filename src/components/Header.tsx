@@ -107,6 +107,20 @@ export const Header: React.FC = () => {
               🇬🇧 LON <strong className="text-slate-200 font-mono-numbers">{worldTimes.lon}</strong>
             </span>
           </div>
+
+          {/* Real-time status indicator & manual sync */}
+          <div className="flex items-center gap-2 flex-shrink-0 text-[10px]">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-emerald-400 font-bold hidden sm:inline">AO VIVO</span>
+            <button
+              type="button"
+              onClick={() => refreshData()}
+              className="text-slate-400 hover:text-emerald-300 transition cursor-pointer flex items-center gap-1 font-mono-numbers bg-slate-900/60 px-2 py-0.5 rounded border border-slate-800"
+              title="Clique para sincronizar cotações agora"
+            >
+              <span>{lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+            </button>
+          </div>
         </div>
       </div>
 
