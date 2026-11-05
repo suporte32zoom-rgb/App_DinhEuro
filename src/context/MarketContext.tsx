@@ -28,6 +28,9 @@ export type NavigationTab =
   | 'dashboard'
   | 'mercados'
   | 'carteiras'
+  | 'daytrade'
+  | 'tape_reading'
+  | 'renda_fixa'
   | 'noticias'
   | 'corretoras'
   | 'graficos'
@@ -43,6 +46,9 @@ export const TAB_ROUTE_MAP: Record<NavigationTab, string> = {
   dashboard: '/',
   mercados: '/mercados',
   carteiras: '/carteiras',
+  daytrade: '/day-trade',
+  tape_reading: '/fluxo-tape-reading',
+  renda_fixa: '/renda-fixa-derivativos',
   noticias: '/noticias',
   corretoras: '/corretoras',
   graficos: '/graficos',
@@ -59,6 +65,12 @@ export const ROUTE_TAB_MAP: Record<string, NavigationTab> = {
   '/': 'dashboard',
   '/mercados': 'mercados',
   '/carteiras': 'carteiras',
+  '/day-trade': 'daytrade',
+  '/daytrade': 'daytrade',
+  '/fluxo-tape-reading': 'tape_reading',
+  '/tape-reading': 'tape_reading',
+  '/renda-fixa-derivativos': 'renda_fixa',
+  '/renda-fixa': 'renda_fixa',
   '/noticias': 'noticias',
   '/corretoras': 'corretoras',
   '/graficos': 'graficos',

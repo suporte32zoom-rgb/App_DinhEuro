@@ -14,6 +14,9 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { DashboardView } from './views/DashboardView';
 import { MarketsView } from './views/MarketsView';
 import { PortfolioView } from './views/PortfolioView';
+import { DayTradeView } from './views/DayTradeView';
+import { TapeReadingView } from './views/TapeReadingView';
+import { FixedIncomeDerivativesView } from './views/FixedIncomeDerivativesView';
 import { NewsView } from './views/NewsView';
 import { BrokersView } from './views/BrokersView';
 import { AdvancedChartsView } from './views/AdvancedChartsView';
@@ -34,6 +37,9 @@ const MainContent: React.FC = () => {
       {activeTab === 'dashboard' && <DashboardView />}
       {activeTab === 'mercados' && <MarketsView />}
       {activeTab === 'carteiras' && <PortfolioView />}
+      {activeTab === 'daytrade' && <DayTradeView />}
+      {activeTab === 'tape_reading' && <TapeReadingView />}
+      {activeTab === 'renda_fixa' && <FixedIncomeDerivativesView />}
       {activeTab === 'noticias' && <NewsView />}
       {activeTab === 'corretoras' && <BrokersView />}
       {activeTab === 'graficos' && <AdvancedChartsView />}
