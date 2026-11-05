@@ -1663,7 +1663,7 @@ export const INITIAL_ASSETS: MarketAsset[] = [
 export const INITIAL_NEWS: NewsItem[] = [
   {
     id: 'news_1',
-    title: 'BCE mantém sinalização de corte gradual de juros com inflação da Zona do Euro perto de 2%',
+    title: 'Banco Central Europeu mantém sinalização de corte gradual de juros com inflação da Zona do Euro perto de 2%',
     summary: 'A presidente Christine Lagarde reiterou em coletiva em Frankfurt que o processo desinflacionário está bem encaminhado no bloco europeu, impulsionando os mercados de dívida soberana e o câmbio.',
     source: 'Bloomberg Línea',
     url: 'https://www.bloomberglinea.com.br/mercados/',
@@ -1749,8 +1749,8 @@ export interface LiveMarketSnapshot {
 
 /**
  * Fallback direto do navegador quando o proxy backend Node não estiver ativo
- * (como em hospedagens estáticas Apache/LiteSpeed no Hostinger).
- * Consulta APIs públicas com CORS liberado: Coinbase & AwesomeAPI.
+ * (como em hospedagens estáticas Apache/LiteSpeed).
+ * Consulta feeds públicos com CORS liberado.
  */
 async function fetchDirectBrowserFallbacks(
   liveRates: UniversalRates,
@@ -1775,7 +1775,7 @@ async function fetchDirectBrowserFallbacks(
         if (rates.ETH) liveRates.ETH = parseFloat(rates.ETH);
         if (rates.SOL) liveRates.SOL = parseFloat(rates.SOL);
 
-        sourcesUsed.push('Coinbase Public API');
+        sourcesUsed.push('Criptoativos Globais');
 
         if (rates.BTC) {
           const btcPrice = 1 / parseFloat(rates.BTC);
@@ -1831,16 +1831,16 @@ async function fetchDirectBrowserFallbacks(
         const bid = parseFloat(aData.GBPBRL.bid);
         rawQuotes['GBP/BRL'] = { price: bid, changePercent: parseFloat(aData.GBPBRL.pctChange), symbol: 'GBP/BRL' };
       }
-      sourcesUsed.push('AwesomeAPI Direta');
+      sourcesUsed.push('Câmbio Comercial');
     }
   } catch (err) {
-    console.debug('[DinhEuro] AwesomeAPI direct fallback indisponível:', err);
+    console.debug('[DinhEuro] Câmbio direto fallback indisponível:', err);
   }
 }
 
 /**
  * Universal Real-time Market Aggregator:
- * Pulls authoritative live data from backend proxy `/api/market/live` (Yahoo Finance, Coinbase, CoinGecko, Frankfurter/ECB)
+ * Pulls authoritative live data from backend proxy `/api/market/live`
  * Completely eliminates static mocks and applies real live market prices to all 100+ assets.
  */
 export async function fetchCompleteLiveMarketData(currentAssets: MarketAsset[]): Promise<LiveMarketSnapshot> {
@@ -1871,18 +1871,18 @@ export async function fetchCompleteLiveMarketData(currentAssets: MarketAsset[]):
       }
 
       if (data.sourcesStatus) {
-        if (data.sourcesStatus.yahooFinance) sourcesUsed.push('Yahoo Finance');
-        if (data.sourcesStatus.coingecko) sourcesUsed.push('CoinGecko');
-        if (data.sourcesStatus.coinbase) sourcesUsed.push('Coinbase');
-        if (data.sourcesStatus.ecb) sourcesUsed.push('BCE/Frankfurter');
-        if (data.sourcesStatus.finnhub) sourcesUsed.push('Finnhub');
+        if (data.sourcesStatus.yahooFinance) sourcesUsed.push('Bolsas Mundiais & B3');
+        if (data.sourcesStatus.coingecko) sourcesUsed.push('Mercado de Criptoativos');
+        if (data.sourcesStatus.coinbase) sourcesUsed.push('Cotações de Paridade');
+        if (data.sourcesStatus.ecb) sourcesUsed.push('Câmbio Interbancário Oficial');
+        if (data.sourcesStatus.finnhub) sourcesUsed.push('Mercado de Capitais');
       }
     }
   } catch (err) {
     console.warn('[DinhEuro] Proxy de mercado indisponível, ativando fallback direto:', err);
   }
 
-  // Se o proxy de backend não responder (ex: hospedagem estática Hostinger/Apache),
+  // Se o proxy de backend não responder (ex: hospedagem estática Apache/LiteSpeed),
   // faz fallback direto e seguro via browser para APIs com CORS público liberado
   if (!proxySucceeded) {
     await fetchDirectBrowserFallbacks(liveRates, rawQuotes, sourcesUsed);
@@ -1955,7 +1955,7 @@ export async function fetchCompleteLiveMarketData(currentAssets: MarketAsset[]):
     updatedAssets,
     news: fetchedNews.length > 0 ? fetchedNews : INITIAL_NEWS,
     rawPairs,
-    sourceSummary: sourcesUsed.length > 0 ? sourcesUsed.join(' • ') : 'Yahoo Finance • CoinGecko • Coinbase • BCE',
+    sourceSummary: sourcesUsed.length > 0 ? sourcesUsed.join(' • ') : 'Bolsas Mundiais • Câmbio Interbancário • Criptoativos Globais',
   };
 }
 

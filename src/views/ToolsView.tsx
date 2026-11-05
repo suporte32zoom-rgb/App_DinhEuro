@@ -122,7 +122,7 @@ export const ToolsView: React.FC = () => {
             <div>
               <h2 className="text-base font-bold text-white">Simulador de Remessa & Conversor Global</h2>
               <p className="text-xs text-slate-400 mt-1">
-                Taxas interbancárias sincronizadas com o Banco Central Europeu e Finnhub.
+                Taxas de referência em tempo real sincronizadas com o mercado global de câmbio.
               </p>
             </div>
 

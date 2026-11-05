@@ -562,7 +562,7 @@ export async function getAggregatedMarketData(): Promise<LiveMarketDataResponse>
               id: `fh_news_${idx}`,
               title: n.headline,
               summary: n.summary,
-              source: n.source || 'Finnhub Market Wire',
+              source: n.source || 'Agência Financeira Global',
               url: n.url,
               category: n.category || 'Geral',
               datetime: n.datetime ? new Date(n.datetime * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora',

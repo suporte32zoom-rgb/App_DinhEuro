@@ -787,7 +787,7 @@ async function getAggregatedMarketData() {
               id: `fh_news_${idx}`,
               title: n.headline,
               summary: n.summary,
-              source: n.source || "Finnhub Market Wire",
+              source: n.source || "Ag\xEAncia Financeira Global",
               url: n.url,
               category: n.category || "Geral",
               datetime: n.datetime ? new Date(n.datetime * 1e3).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "Agora",
@@ -1048,7 +1048,7 @@ async function startServer() {
   }
   const PORT = process.env.PORT || 3e3;
   app.listen(PORT, () => {
-    console.log(`[DinhEuro] Servidor rodando na porta ${PORT} (${isDev ? "Desenvolvimento" : "Produ\xE7\xE3o/Hostinger"})`);
+    console.log(`[DinhEuro] Servidor rodando na porta ${PORT} (${isDev ? "Desenvolvimento" : "Produ\xE7\xE3o"})`);
     console.log(`[DinhEuro] Endpoint do Webhook Finnhub pronto em: POST http://localhost:${PORT}/api/webhook/finnhub`);
   });
 }

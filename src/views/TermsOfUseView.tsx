@@ -75,7 +75,7 @@ export const TermsOfUseView: React.FC = () => {
             <strong>NENHUMA INFORMAÇÃO, GRÁFICO, COTAÇÃO OU CONTEÚDO DISPONIBILIZADO NESTE SITE CONSTITUI RECOMENDAÇÃO, CONSULTORIA, ANÁLISE OU OFERTA DE COMPRA OU VENDA DE ATIVOS FINANCEIROS.</strong>
           </p>
           <p>
-            As cotações de moedas (Euro, Dólar, Real, Libra), ações da B3 e de bolsas internacionais (Wall Street, Frankfurt, Londres), criptoativos, taxas de juros e commodities são transmitidas via integrações de APIs públicas e de provedores de mercado (como Finnhub, Banco Central Europeu, Binance e AwesomeAPI). O DinhEuro não se responsabiliza por eventuais latências de rede, atrasos na atualização de cotações, variações de spread de terceiros ou decisões de investimento tomadas pelo usuário com base nas informações visualizadas.
+            As cotações de moedas (Euro, Dólar, Real, Libra), ações da B3 e de bolsas internacionais (Wall Street, Frankfurt, Londres), criptoativos, taxas de juros e commodities são transmitidas via integrações com feeds institucionais de mercado, câmbio interbancário e livros públicos de negociação. O DinhEuro não se responsabiliza por eventuais latências de rede, atrasos na atualização de cotações, variações de spread de terceiros ou decisões de investimento tomadas pelo usuário com base nas informações visualizadas.
           </p>
           <p>
             Investimentos em ativos de renda variável, Forex, contratos por diferença (CFDs) e criptomoedas envolvem elevado risco de volatilidade e perda de capital. O investidor deve sempre consultar profissionais certificados (CNPI, CFP, CGA) antes de qualquer aporte.

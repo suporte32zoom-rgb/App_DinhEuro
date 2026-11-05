@@ -101,7 +101,7 @@ export const PrivacyPolicyView: React.FC = () => {
                 A. Dados Locais no Dispositivo (Armazenamento Exclusivo do Usuário)
               </span>
               <p className="text-slate-400 text-xs">
-                Suas simulações de câmbio, ativos da carteira de investimentos (`dinheuro_user_portfolio_v1`), chave Finnhub opcional e preferência de tema visual (`dinheuro_theme`) são gravados <strong>unicamente no localStorage do seu próprio navegador</strong>. Esses dados nunca são enviados ou armazenados em servidores centrais do DinhEuro.
+                Suas simulações de câmbio, ativos da carteira de investimentos (`dinheuro_user_portfolio_v1`), preferências e escolhas de tema visual (`dinheuro_theme`) são gravados <strong>unicamente no localStorage do seu próprio navegador</strong>. Esses dados nunca são enviados ou armazenados em servidores centrais do DinhEuro.
               </p>
             </div>
             <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
@@ -109,7 +109,7 @@ export const PrivacyPolicyView: React.FC = () => {
                 B. Dados de Telemetria Técnica e Desempenho
               </span>
               <p className="text-slate-400 text-xs">
-                Registros de conexão estritamente necessários para entrega de conteúdo HTTP/HTTPS e segurança (endereço IP anonimizado, User-Agent, data/hora e páginas visitadas) coletados por infraestrutura de CDN e servidores na Hostinger para prevenção de fraudes e mitigação de ataques cibernéticos (Art. 7º, IX da LGPD - Legítimo Interesse).
+                Registros de conexão estritamente necessários para entrega de conteúdo HTTP/HTTPS e segurança (endereço IP anonimizado, User-Agent, data/hora e páginas visitadas) coletados por infraestrutura de CDN e servidores em nuvem de alta segurança para prevenção de fraudes e mitigação de ataques cibernéticos (Art. 7º, IX da LGPD - Legítimo Interesse).
               </p>
             </div>
           </div>
@@ -147,8 +147,8 @@ export const PrivacyPolicyView: React.FC = () => {
             O DinhEuro <strong>NÃO comercializa, não aluga e não repassa</strong> dados pessoais ou históricos de navegação para anunciantes, corretores de leads ou birôs de crédito. O compartilhamento ocorre estritamente com provedores de infraestrutura essencial:
           </p>
           <ul className="space-y-1.5 list-disc pl-5 text-slate-400">
-            <li><strong>Provedores de Hospedagem (Hostinger International Ltd):</strong> servidores web seguros e balanceamento de carga com certificação SSL/TLS.</li>
-            <li><strong>APIs de Mercado Financeiro (Finnhub, BCE, AwesomeAPI):</strong> consultas de cotações realizadas via proxy anônimo no backend sem vinculação à identidade civil do usuário.</li>
+            <li><strong>Provedores de Infraestrutura de Nuvem e CDN:</strong> servidores web seguros, nós de borda (edge) e balanceamento de carga com certificação SSL/TLS de ponta a ponta.</li>
+            <li><strong>Provedores de Feeds de Mercado Financeiro:</strong> consultas de cotações e taxas interbancárias realizadas via canais anônimos sem qualquer vinculação à identidade civil do usuário.</li>
           </ul>
         </div>
 

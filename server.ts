@@ -129,7 +129,7 @@ async function startServer() {
 
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`[DinhEuro] Servidor rodando na porta ${PORT} (${isDev ? 'Desenvolvimento' : 'Produção/Hostinger'})`);
+    console.log(`[DinhEuro] Servidor rodando na porta ${PORT} (${isDev ? 'Desenvolvimento' : 'Produção'})`);
     console.log(`[DinhEuro] Endpoint do Webhook Finnhub pronto em: POST http://localhost:${PORT}/api/webhook/finnhub`);
   });
 }

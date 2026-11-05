@@ -20,7 +20,7 @@
         }
       });
     </script>
-    <meta name="description" content="Plataforma e hub financeiro global com cotações em tempo real via Finnhub, simulador de câmbio universal, ações mundiais e B3, cripto, carteiras e análises de mercado." />
+    <meta name="description" content="Plataforma e hub financeiro global com cotações em tempo real, simulador de câmbio universal, ações mundiais e B3, cripto, carteiras e análises de mercado." />
     
     <!-- PWA & Mobile Meta Tags -->
     <meta name="theme-color" content="#0B1320" />
@@ -34,12 +34,12 @@
     
     <!-- OpenGraph / Social -->
     <meta property="og:title" content="DinhEuro - Hub Financeiro Global" />
-    <meta property="og:description" content="Plataforma e hub financeiro global com cotações em tempo real via Finnhub, simulador de câmbio universal, ações mundiais e B3, cripto, carteiras e análises de mercado." />
+    <meta property="og:description" content="Plataforma e hub financeiro global com cotações em tempo real, simulador de câmbio universal, ações mundiais e B3, cripto, carteiras e análises de mercado." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/logo.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="DinhEuro - Hub Financeiro Global" />
-    <meta name="twitter:description" content="Plataforma e hub financeiro global com cotações em tempo real via Finnhub, simulador de câmbio universal, ações mundiais e B3, cripto, carteiras e análises de mercado." />
+    <meta name="twitter:description" content="Plataforma e hub financeiro global com cotações em tempo real, simulador de câmbio universal, ações mundiais e B3, cripto, carteiras e análises de mercado." />
     <meta name="twitter:image" content="/logo.png" />
     
     <!-- Google Fonts for Financial UI (Inter + JetBrains Mono for figures) -->
@@ -74,10 +74,10 @@
       }
     </style>
 
-    <!-- Script de proteção e diagnóstico para Hostinger/Apache/LiteSpeed -->
+    <!-- Script de proteção e diagnóstico para inicialização em produção -->
     <script>
       (function() {
-        // Se este index.html estiver sendo executado diretamente em produção sem Vite (ex: Hostinger servindo a raiz)
+        // Se este index.html estiver sendo executado diretamente em produção sem Vite
         // e o arquivo /src/main.tsx falhar, detecta e redireciona automaticamente para a versão compilada em /dist/
         var hasVite = window.__vite_plugin_react_preamble_installed__ || window.location.port === '3000' || window.location.hostname === 'localhost';
         
@@ -94,33 +94,33 @@
                   if (res.ok) {
                     window.location.replace('/dist/' + window.location.search);
                   } else {
-                    renderHostingerGuidance();
+                    renderServerGuidance();
                   }
                 })
                 .catch(function() {
-                  renderHostingerGuidance();
+                  renderServerGuidance();
                 });
             }
           }
         }, true);
 
-        function renderHostingerGuidance() {
+        function renderServerGuidance() {
           var splash = document.getElementById('dinheuro-splash');
           if (!splash) return;
           splash.innerHTML = 
             '<div style="background: rgba(15,23,42,0.98); border: 1px solid rgba(16,185,129,0.3); border-radius: 16px; padding: 28px; max-width: 520px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); text-align: left;">' +
             '<div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">' +
             '<div style="width:40px; height:40px; border-radius:10px; background:rgba(16,185,129,0.15); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:#10B981;">€</div>' +
-            '<div><h2 style="font-size:18px; font-weight:700; color:#F8FAFC; margin:0;">Publicação Hostinger DinhEuro</h2>' +
-            '<p style="font-size:12px; color:#94A3B8; margin:2px 0 0 0;">Configuração rápida do domínio</p></div>' +
+            '<div><h2 style="font-size:18px; font-weight:700; color:#F8FAFC; margin:0;">Publicação em Produção DinhEuro</h2>' +
+            '<p style="font-size:12px; color:#94A3B8; margin:2px 0 0 0;">Configuração de diretório de hospedagem</p></div>' +
             '</div>' +
             '<p style="color:#CBD5E1; font-size:13px; line-height:1.6; margin-bottom:14px;">' +
-            'Os arquivos do repositório foram detectados na raiz do servidor. No painel Hostinger hPanel, certifique-se de:' +
+            'Os arquivos do repositório foram detectados na raiz do servidor. No painel de gerenciamento do servidor web, certifique-se de:' +
             '</p>' +
             '<ol style="color:#94A3B8; font-size:12px; line-height:1.7; padding-left:20px; margin-bottom:18px;">' +
-            '<li>Acessar <b>Sites</b> &gt; <b>Gerenciador de Arquivos</b> &gt; Configurações do Domínio.</li>' +
-            '<li>Apontar o diretório raiz (Document Root) para <b>public_html/dist</b> (onde estão os assets prontos para produção).</li>' +
-            '<li>Ou, se utilizar a aplicação Node.js na Hostinger, iniciar com <b>server.js</b>.</li>' +
+            '<li>Acessar as configurações de domínio e arquivos do servidor web.</li>' +
+            '<li>Apontar o diretório raiz (Document Root) para a pasta <b>dist</b> (onde estão os assets de produção).</li>' +
+            '<li>Ou, se utilizar ambiente Node.js, executar com <b>server.js</b>.</li>' +
             '</ol>' +
             '<div style="display:flex; gap:10px; flex-wrap:wrap;">' +
             '<a href="/dist/" style="display:inline-block; background:#10B981; color:#064E3B; font-weight:700; font-size:12px; padding:9px 16px; border-radius:8px; text-decoration:none;">Acessar /dist</a>' +

@@ -1,7 +1,7 @@
 # ==============================================================================
-# DinhEuro (dinheuro.com / dinheuro.com.br) - Root Hostinger .htaccess
+# DinhEuro (dinheuro.com / dinheuro.com.br) - Root Production .htaccess
 # Redireciona e reescreve automaticamente para /dist se o repositório
-# for clonado diretamente na pasta public_html da Hostinger.
+# for publicado diretamente na raiz do servidor web.
 # ==============================================================================
 
 <IfModule mod_rewrite.c>

@@ -174,7 +174,7 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isLiveUpdating, setIsLiveUpdating] = useState<boolean>(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [displayCurrency, setDisplayCurrency] = useState<'BRL' | 'EUR' | 'USD'>('BRL');
-  const [apiSourceSummary, setApiSourceSummary] = useState<string>('Yahoo Finance • CoinGecko • Coinbase • BCE');
+  const [apiSourceSummary, setApiSourceSummary] = useState<string>('Bolsas Mundiais • Câmbio Interbancário • Criptoativos Globais');
 
   const assetsRef = useRef<MarketAsset[]>(assets);
   useEffect(() => {

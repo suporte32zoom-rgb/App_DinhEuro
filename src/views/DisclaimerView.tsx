@@ -75,19 +75,19 @@ export const DisclaimerView: React.FC = () => {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-              <span className="text-xs font-bold text-emerald-400 block">• Finnhub Stock API</span>
+              <span className="text-xs font-bold text-emerald-400 block">• Bolsas Internacionais & Ações Globais</span>
               <p className="text-[11px] text-slate-400">Cotações em tempo real de ações norte-americanas (Wall Street), dados de fechamento e fundamentos de empresas.</p>
             </div>
             <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-              <span className="text-xs font-bold text-blue-400 block">• Banco Central Europeu (BCE) & AwesomeAPI</span>
+              <span className="text-xs font-bold text-blue-400 block">• Câmbio Comercial & Taxas Interbancárias</span>
               <p className="text-[11px] text-slate-400">Taxas de câmbio comercial e paridades de moedas soberanas (EUR, USD, BRL, GBP, JPY, CHF).</p>
             </div>
             <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-              <span className="text-xs font-bold text-amber-400 block">• Binance & Crypto APIs</span>
+              <span className="text-xs font-bold text-amber-400 block">• Redes Globais de Criptoativos</span>
               <p className="text-[11px] text-slate-400">Preços e variações de 24 horas dos principais ativos digitais globais (BTC, ETH, SOL, BNB).</p>
             </div>
             <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-              <span className="text-xs font-bold text-purple-400 block">• Brapi & Índices B3</span>
+              <span className="text-xs font-bold text-purple-400 block">• Mercado de Capitais Brasileiro (B3)</span>
               <p className="text-[11px] text-slate-400">Cotações das principais companhias listadas na Bolsa de Valores do Brasil (B3) e pontuação do Ibovespa.</p>
             </div>
           </div>

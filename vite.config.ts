@@ -16,7 +16,7 @@ export default defineConfig(() => {
           id: '/',
           name: 'DinhEuro - Hub Financeiro Global',
           short_name: 'DinhEuro',
-          description: 'Hub financeiro global com cotações em tempo real via Finnhub, simulador de câmbio universal, ações mundiais e B3, cripto e carteiras.',
+          description: 'Hub financeiro global com cotações em tempo real, simulador de câmbio universal, ações mundiais e B3, cripto e carteiras.',
           theme_color: '#0B1320',
           background_color: '#0B1320',
           display: 'standalone',

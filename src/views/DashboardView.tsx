@@ -57,7 +57,7 @@ export const DashboardView: React.FC = () => {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold mb-3">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Dados Globais em Tempo Real • Finnhub • Yahoo Finance • CoinGecko • Coinbase • BCE</span>
+                <span>Dados Globais em Tempo Real • Câmbio Interbancário, Bolsas Mundiais & Criptoativos</span>
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
                 Hub Financeiro Global{' '}

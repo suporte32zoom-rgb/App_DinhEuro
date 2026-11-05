@@ -262,10 +262,10 @@ export function getAssetMetadata(asset: MarketAsset): AssetMetadata {
         nature: 'Par Cambial Soberano (Foreign Exchange)',
         sector: 'Mercado de Moedas e Divisas',
         segment: 'Over-The-Counter (OTC) Interbancário',
-        benchmark: 'Dólar Comercial / PTAX / Fixings ECB',
+        benchmark: 'Dólar Comercial / PTAX / Câmbio Interbancário',
       },
       aiDiagnosis: {
-        scenarioSummary: `${asset.symbol} opera em regime de flutuação limpa influenciado pelo diferencial de juros entre os bancos centrais (FED, BCE, BACEN) e fluxo cambial comercial. Níveis de suporte técnico em ${supportLevel} e resistência em ${resistanceLevel}.`,
+        scenarioSummary: `${asset.symbol} opera em regime de flutuação limpa influenciado pelo diferencial de juros entre as principais autoridades monetárias e fluxo cambial comercial. Níveis de suporte técnico em ${supportLevel} e resistência em ${resistanceLevel}.`,
         supportLevel,
         resistanceLevel,
         liquidityAnalysis: 'Mercado de maior liquidez mundial (US$ 7.5 trilhões diários).',

@@ -101,7 +101,7 @@ export const AboutView: React.FC = () => {
           <span>Infraestrutura Tecnológica e Arquitetura PWA</span>
         </h2>
         <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-          O DinhEuro é construído sob arquitetura <strong>Progressive Web App (PWA)</strong> de alta performance, projetado para deploy resiliente na <strong>Hostinger</strong>. Ele combina:
+          O DinhEuro é construído sob arquitetura <strong>Progressive Web App (PWA)</strong> de alta performance, projetado para operação contínua e resiliente em infraestrutura global em nuvem. Ele combina:
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
@@ -114,7 +114,7 @@ export const AboutView: React.FC = () => {
           </div>
           <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
             <span className="text-xs font-bold text-amber-400 block">• Agregação Multiprovedor em Tempo Real</span>
-            <p className="text-xs text-slate-400">Sincronização com Finnhub, Banco Central Europeu, Binance e Brapi para cobertura 360º de mercados.</p>
+            <p className="text-xs text-slate-400">Sincronização contínua com feeds consolidados de bolsas internacionais, mesas de câmbio e redes globais de liquidez para cobertura 360º de mercados.</p>
           </div>
           <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
             <span className="text-xs font-bold text-purple-400 block">• Privacidade Local (Zero Tracking de Carteira)</span>

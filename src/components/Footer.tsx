@@ -57,7 +57,7 @@ export const Footer: React.FC = () => {
             <div className="space-y-1.5 pt-1">
               <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-medium">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Operação Global • Hostinger Production Architecture</span>
+                <span>Operação Global • Infraestrutura em Nuvem de Alta Disponibilidade</span>
               </div>
               <div className="flex items-center gap-2 text-[11px] text-slate-400">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
@@ -247,7 +247,7 @@ export const Footer: React.FC = () => {
         {/* Disclaimer Financeiro e Transparência de Dados */}
         <div className="pt-6 border-t border-slate-800/80 text-[11px] text-slate-500 leading-relaxed space-y-2">
           <p>
-            <strong className="text-slate-400">Aviso de Risco e Isenção de Responsabilidade Financeira:</strong> O DinhEuro (<span className="text-emerald-400 font-mono">dinheuro.com</span> / <span className="text-emerald-400 font-mono">dinheuro.com.br</span>) é um portal digital informativo e educacional de agregação de dados públicos. As cotações em tempo real de ativos mundiais, taxas de câmbio (Euro, Dólar, Real), ações da B3, criptoativos e simuladores são transmitidos via integrações oficiais com provedores como Finnhub, Banco Central Europeu, Binance e Brapi. O DinhEuro não presta consultoria de investimentos, análise de valores mobiliários ou recomendação direta de aporte financeiro. A negociação em mercados de renda variável e Forex envolve alto risco de perda do patrimônio investido.
+            <strong className="text-slate-400">Aviso de Risco e Isenção de Responsabilidade Financeira:</strong> O DinhEuro (<span className="text-emerald-400 font-mono">dinheuro.com</span> / <span className="text-emerald-400 font-mono">dinheuro.com.br</span>) é um portal digital informativo e educacional de agregação de dados econômicos. As cotações em tempo real de ativos mundiais, taxas de câmbio (Euro, Dólar, Real), ações da B3, bolsas internacionais, criptoativos e simuladores são consolidados a partir de feeds institucionais de mercado, mesas de câmbio interbancário e livros públicos de negociação. O DinhEuro não presta consultoria de investimentos, análise de valores mobiliários ou recomendação direta de aporte financeiro. A negociação em mercados de renda variável e Forex envolve alto risco de perda do patrimônio investido.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-800/40 text-slate-500 text-[11px]">
