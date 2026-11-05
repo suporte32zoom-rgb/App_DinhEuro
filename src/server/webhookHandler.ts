@@ -1,10 +1,10 @@
 /**
- * Finnhub Webhook Handler for DinhEuro
+ * Finnhub Webhook Handler for DinhEuro (dinheuro.com / dinheuro.com.br)
  * Handles secret validation, immediate 200 acknowledgment, and background processing.
- * Feeds live trades directly into market proxy cache.
+ * Feeds live trades directly into market proxy cache for real-time quotation synchronization.
  */
 
-import { updateQuoteFromWebhook } from './marketProxy';
+import { updateQuoteFromWebhook, webhookQuoteOverrides } from './marketProxy';
 
 export interface WebhookValidationResult {
   isValid: boolean;
@@ -15,7 +15,7 @@ export interface WebhookValidationResult {
 export interface FinnhubWebhookEvent {
   type?: string;
   data?: Array<{
-    s?: string; // Symbol
+    s?: string; // Symbol (e.g. AAPL, BINANCE:BTCUSDT, PETR4)
     p?: number; // Price
     t?: number; // Timestamp
     v?: number; // Volume
@@ -38,7 +38,7 @@ export function validateWebhookHeader(
 ): WebhookValidationResult {
   const headerValue = Array.isArray(secretHeader) ? secretHeader[0] : secretHeader;
 
-  if (!headerValue || headerValue !== expectedSecret) {
+  if (!headerValue || headerValue.trim() !== expectedSecret.trim()) {
     return {
       isValid: false,
       statusCode: 401,
@@ -55,7 +55,7 @@ export function validateWebhookHeader(
 
 /**
  * Background processor for Finnhub events
- * Does not block HTTP response and updates quotes in memory
+ * Does not block HTTP response and updates quotes in memory immediately
  */
 export async function processarEventoEmBackground(data: FinnhubWebhookEvent): Promise<void> {
   try {
@@ -81,4 +81,20 @@ export async function processarEventoEmBackground(data: FinnhubWebhookEvent): Pr
   } catch (error) {
     console.error('[DinhEuro Webhook] Erro ao processar dados do webhook:', error);
   }
+}
+
+/**
+ * Returns diagnostic metadata and health status for the Finnhub webhook integration
+ */
+export function getWebhookStatus() {
+  const expectedSecret = process.env.FINNHUB_WEBHOOK_SECRET || 'dbfsnl9r01qiahublh4g';
+  return {
+    status: 'active',
+    endpoint: '/api/webhook/finnhub',
+    expectedHeader: 'x-finnhub-secret',
+    secretConfigured: !!expectedSecret,
+    totalEventsReceived: recentWebhookEvents.length,
+    recentEvents: recentWebhookEvents.slice(0, 5),
+    latestTicksApplied: Object.keys(webhookQuoteOverrides).length,
+  };
 }

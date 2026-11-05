@@ -30,6 +30,8 @@ export const Header: React.FC = () => {
     theme,
     toggleTheme,
     universalRates,
+    refreshData,
+    lastUpdated,
   } = useMarket();
 
   const [searchQuery, setSearchQuery] = useState('');

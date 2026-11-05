@@ -1,0 +1,54 @@
+# ==============================================================================
+# DinhEuro (dinheuro.com / dinheuro.com.br) - Root Hostinger .htaccess
+# Redireciona e reescreve automaticamente para /dist se o repositório
+# for clonado diretamente na pasta public_html da Hostinger.
+# ==============================================================================
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Forçar HTTPS
+  RewriteCond %{HTTPS} off
+  RewriteCond %{HTTP_HOST} !^localhost
+  RewriteCond %{HTTP_HOST} !^127\.0\.0\.1
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # 2. Tipos MIME para módulos JS e PWA
+  <IfModule mod_mime.c>
+    AddType application/javascript .js .mjs
+    AddType text/css .css
+    AddType application/manifest+json .webmanifest .json
+    AddType image/svg+xml .svg
+    AddType font/woff2 .woff2
+    AddType font/woff .woff
+  </IfModule>
+
+  # 3. Se a pasta /dist existir no servidor:
+  # 3a. Servir arquivos estáticos dentro de dist (ex: /assets/...)
+  RewriteCond %{DOCUMENT_ROOT}/dist/$1 -f
+  RewriteRule ^(.*)$ dist/$1 [L]
+
+  # 3b. Se a requisição for para a raiz exata, servir dist/index.html
+  RewriteCond %{DOCUMENT_ROOT}/dist/index.html -f
+  RewriteRule ^$ dist/index.html [L]
+
+  # 3c. Para qualquer rota SPA (ex: /mercados, /termos-de-uso), reescrever para dist/index.html
+  RewriteCond %{DOCUMENT_ROOT}/dist/index.html -f
+  RewriteCond %{REQUEST_URI} !^/dist/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ dist/index.html [L]
+
+  # 4. Fallback caso a raiz já seja /dist (se configurado Document Root no Hostinger)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Compressão e Otimização
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json application/manifest+json image/svg+xml
+</IfModule>

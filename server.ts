@@ -6,6 +6,7 @@ import {
   validateWebhookHeader,
   processarEventoEmBackground,
   recentWebhookEvents,
+  getWebhookStatus,
 } from './src/server/webhookHandler';
 import { getAggregatedMarketData } from './src/server/marketProxy';
 
@@ -23,15 +24,19 @@ async function startServer() {
   // Middleware para interpretar JSON no corpo da requisição
   app.use(express.json());
 
-  // Endpoint do Webhook Finnhub
+  // Endpoint do Webhook Finnhub (POST)
   app.post('/api/webhook/finnhub', (req: Request, res: Response) => {
-    const secretHeader = req.headers['x-finnhub-secret'];
+    const secretHeader =
+      req.headers['x-finnhub-secret'] ||
+      (req.headers['X-Finnhub-Secret'] as string) ||
+      (req.query.secret as string) ||
+      req.body?.secret;
     const expectedSecret = process.env.FINNHUB_WEBHOOK_SECRET || 'dbfsnl9r01qiahublh4g';
 
-    // 1. Validação de Segurança do Cabeçalho
+    // 1. Validação de Segurança do Cabeçalho com o FINNHUB_WEBHOOK_SECRET
     const validation = validateWebhookHeader(secretHeader, expectedSecret);
     if (!validation.isValid) {
-      console.warn('Tentativa de webhook não autorizada recebida.');
+      console.warn('[DinhEuro Webhook] Tentativa não autorizada recebida no endpoint Finnhub.');
       return res.status(validation.statusCode).json(validation.response);
     }
 
@@ -39,19 +44,25 @@ async function startServer() {
     // Isso deve ser feito ANTES de qualquer lógica pesada para evitar timeouts na Finnhub.
     res.status(200).json({ received: true });
 
-    // 3. Processamento posterior dos dados em segundo plano
+    // 3. Processamento posterior dos dados em segundo plano para sincronização de cotações
     const eventData = req.body;
     processarEventoEmBackground(eventData);
   });
 
-  // Endpoint para monitorar o status e histórico de webhooks recebidos
-  app.get('/api/webhook/finnhub/status', (_req: Request, res: Response) => {
+  // Endpoint informativo do Webhook Finnhub (GET)
+  app.get('/api/webhook/finnhub', (_req: Request, res: Response) => {
     res.json({
       status: 'active',
-      webhookUrl: '/api/webhook/finnhub',
-      totalEventsReceived: recentWebhookEvents.length,
-      recentEvents: recentWebhookEvents.slice(0, 5),
+      message: 'Endpoint do Webhook Finnhub ativo e pronto para receber POST requests.',
+      endpoint: '/api/webhook/finnhub',
+      headerName: 'x-finnhub-secret',
+      documentation: 'Configure este endpoint no painel de Webhooks da Finnhub com o segredo FINNHUB_WEBHOOK_SECRET.',
     });
+  });
+
+  // Endpoint para monitorar o status e histórico de webhooks recebidos
+  app.get('/api/webhook/finnhub/status', (_req: Request, res: Response) => {
+    res.json(getWebhookStatus());
   });
 
   // Real-time Aggregated Market Data API (Finnhub, AwesomeAPI, FMP, Coinbase, Yahoo Finance)
@@ -92,9 +103,9 @@ async function startServer() {
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
 
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isDev = process.env.NODE_ENV === 'development';
 
-  if (!isProduction) {
+  if (isDev) {
     // Mount Vite dev server in middleware mode
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
@@ -108,16 +119,17 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    // Serve static files in production
-    app.use(express.static(path.resolve(__dirname, 'dist')));
+    // Serve static compiled assets in production
+    const distPath = path.resolve(__dirname, 'dist');
+    app.use(express.static(distPath));
     app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+      res.sendFile(path.resolve(distPath, 'index.html'));
     });
   }
 
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`[DinhEuro] Servidor rodando na porta ${PORT} (${isProduction ? 'Produção' : 'Desenvolvimento'})`);
+    console.log(`[DinhEuro] Servidor rodando na porta ${PORT} (${isDev ? 'Desenvolvimento' : 'Produção/Hostinger'})`);
     console.log(`[DinhEuro] Endpoint do Webhook Finnhub pronto em: POST http://localhost:${PORT}/api/webhook/finnhub`);
   });
 }

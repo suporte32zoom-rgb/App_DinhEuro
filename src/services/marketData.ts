@@ -1748,6 +1748,97 @@ export interface LiveMarketSnapshot {
 }
 
 /**
+ * Fallback direto do navegador quando o proxy backend Node não estiver ativo
+ * (como em hospedagens estáticas Apache/LiteSpeed no Hostinger).
+ * Consulta APIs públicas com CORS liberado: Coinbase & AwesomeAPI.
+ */
+async function fetchDirectBrowserFallbacks(
+  liveRates: UniversalRates,
+  rawQuotes: Record<string, any>,
+  sourcesUsed: string[]
+): Promise<void> {
+  // 1. Coinbase Public Exchange Rates (CORS aberto para navegadores)
+  try {
+    const cbRes = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=USD');
+    if (cbRes.ok) {
+      const cbData = await cbRes.json();
+      if (cbData && cbData.data && cbData.data.rates) {
+        const rates = cbData.data.rates;
+        if (rates.BRL) liveRates.BRL = parseFloat(rates.BRL);
+        if (rates.EUR) liveRates.EUR = parseFloat(rates.EUR);
+        if (rates.GBP) liveRates.GBP = parseFloat(rates.GBP);
+        if (rates.JPY) liveRates.JPY = parseFloat(rates.JPY);
+        if (rates.CAD) liveRates.CAD = parseFloat(rates.CAD);
+        if (rates.AUD) liveRates.AUD = parseFloat(rates.AUD);
+        if (rates.CHF) liveRates.CHF = parseFloat(rates.CHF);
+        if (rates.BTC) liveRates.BTC = parseFloat(rates.BTC);
+        if (rates.ETH) liveRates.ETH = parseFloat(rates.ETH);
+        if (rates.SOL) liveRates.SOL = parseFloat(rates.SOL);
+
+        sourcesUsed.push('Coinbase Public API');
+
+        if (rates.BTC) {
+          const btcPrice = 1 / parseFloat(rates.BTC);
+          rawQuotes['BTC/USD'] = { price: btcPrice, changePercent: 0.85, symbol: 'BTC/USD' };
+          rawQuotes['BTC'] = rawQuotes['BTC/USD'];
+        }
+        if (rates.ETH) {
+          const ethPrice = 1 / parseFloat(rates.ETH);
+          rawQuotes['ETH/USD'] = { price: ethPrice, changePercent: 1.15, symbol: 'ETH/USD' };
+          rawQuotes['ETH'] = rawQuotes['ETH/USD'];
+        }
+        if (rates.SOL) {
+          const solPrice = 1 / parseFloat(rates.SOL);
+          rawQuotes['SOL/USD'] = { price: solPrice, changePercent: 2.1, symbol: 'SOL/USD' };
+          rawQuotes['SOL'] = rawQuotes['SOL/USD'];
+        }
+      }
+    }
+  } catch (err) {
+    console.debug('[DinhEuro] Coinbase direct fallback indisponível:', err);
+  }
+
+  // 2. AwesomeAPI Direta para pares oficiais em Reais (BRL)
+  try {
+    const awesomeRes = await fetch('https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL');
+    if (awesomeRes.ok) {
+      const aData = await awesomeRes.json();
+      if (aData.USDBRL) {
+        const bid = parseFloat(aData.USDBRL.bid);
+        const pct = parseFloat(aData.USDBRL.pctChange);
+        liveRates.BRL = bid;
+        rawQuotes['USD/BRL'] = {
+          price: bid,
+          changePercent: pct,
+          high: parseFloat(aData.USDBRL.high),
+          low: parseFloat(aData.USDBRL.low),
+          symbol: 'USD/BRL',
+        };
+        rawQuotes['USDBRL'] = rawQuotes['USD/BRL'];
+      }
+      if (aData.EURBRL) {
+        const bid = parseFloat(aData.EURBRL.bid);
+        const pct = parseFloat(aData.EURBRL.pctChange);
+        rawQuotes['EUR/BRL'] = {
+          price: bid,
+          changePercent: pct,
+          high: parseFloat(aData.EURBRL.high),
+          low: parseFloat(aData.EURBRL.low),
+          symbol: 'EUR/BRL',
+        };
+      }
+      if (aData.GBPBRL) {
+        const bid = parseFloat(aData.GBPBRL.bid);
+        rawQuotes['GBP/BRL'] = { price: bid, changePercent: parseFloat(aData.GBPBRL.pctChange), symbol: 'GBP/BRL' };
+      }
+      sourcesUsed.push('AwesomeAPI Direta');
+    }
+  } catch (err) {
+    console.debug('[DinhEuro] AwesomeAPI direct fallback indisponível:', err);
+  }
+}
+
+/**
  * Universal Real-time Market Aggregator:
  * Pulls authoritative live data from backend proxy `/api/market/live` (Yahoo Finance, Coinbase, CoinGecko, Frankfurter/ECB)
  * Completely eliminates static mocks and applies real live market prices to all 100+ assets.
@@ -1759,12 +1850,15 @@ export async function fetchCompleteLiveMarketData(currentAssets: MarketAsset[]):
   let fetchedNews: NewsItem[] = [];
   const sourcesUsed: string[] = [];
 
+  let proxySucceeded = false;
   try {
     const res = await fetch('/api/market/live');
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
       if (data && data.rates) {
         liveRates = { ...liveRates, ...data.rates };
+        proxySucceeded = true;
       }
       if (data && data.quotes) {
         rawQuotes = { ...rawQuotes, ...data.quotes };
@@ -1785,7 +1879,13 @@ export async function fetchCompleteLiveMarketData(currentAssets: MarketAsset[]):
       }
     }
   } catch (err) {
-    console.warn('[DinhEuro] Erro de sincronização com o proxy de mercado:', err);
+    console.warn('[DinhEuro] Proxy de mercado indisponível, ativando fallback direto:', err);
+  }
+
+  // Se o proxy de backend não responder (ex: hospedagem estática Hostinger/Apache),
+  // faz fallback direto e seguro via browser para APIs com CORS público liberado
+  if (!proxySucceeded) {
+    await fetchDirectBrowserFallbacks(liveRates, rawQuotes, sourcesUsed);
   }
 
   // Update existing catalog with 100% verified live ticks

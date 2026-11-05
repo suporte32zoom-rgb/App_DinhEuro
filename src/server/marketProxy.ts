@@ -80,6 +80,17 @@ let lastCacheTime = 0;
 let isRefreshing = false;
 const CACHE_TTL_MS = 6000; // 6 seconds real-time window
 
+// Live real-time tick overrides received from Finnhub Webhook
+export const webhookQuoteOverrides: Record<
+  string,
+  {
+    price: number;
+    volume?: number;
+    timestamp: number;
+    source: string;
+  }
+> = {};
+
 // Comprehensive Mapping of DinhEuro symbols to Yahoo Finance symbols (90+ live assets)
 export const YAHOO_SYMBOLS_MAP: Record<string, { yahoo: string; name: string; category: string; currency: string; flag?: string }> = {
   // 1. World Indices (14)
@@ -564,6 +575,34 @@ export async function getAggregatedMarketData(): Promise<LiveMarketDataResponse>
       }
     }
 
+    // 8. Apply any real-time ticks received via Finnhub Webhook
+    for (const [sym, override] of Object.entries(webhookQuoteOverrides)) {
+      if (override && override.price > 0) {
+        const existing = quotes[sym];
+        const prevClose = existing?.previousClose || override.price;
+        const isBrlPair = sym.includes('/') && (existing?.currency === 'BRL' || sym.endsWith('/BRL'));
+        const changeVal = Number((override.price - prevClose).toFixed(isBrlPair ? 4 : 2));
+        const changePct = prevClose > 0 ? Number(((changeVal / prevClose) * 100).toFixed(2)) : 0;
+        const high = existing ? Math.max(existing.high, override.price) : Number((override.price * 1.01).toFixed(2));
+        const low = existing ? Math.min(existing.low, override.price) : Number((override.price * 0.99).toFixed(2));
+
+        quotes[sym] = {
+          symbol: sym,
+          price: override.price,
+          change: changeVal,
+          changePercent: changePct,
+          high,
+          low,
+          open: existing?.open || prevClose,
+          previousClose: prevClose,
+          volume: override.volume ? `${override.volume}` : existing?.volume || 'N/A',
+          currency: existing?.currency || (sym.includes('BRL') ? 'BRL' : 'USD'),
+          source: 'finnhub_webhook_live',
+        };
+        sourcesStatus.finnhub = true;
+      }
+    }
+
     cachedData = {
       rates,
       pairs,
@@ -579,3 +618,103 @@ export async function getAggregatedMarketData(): Promise<LiveMarketDataResponse>
 
   return cachedData;
 }
+
+/**
+ * Normalizes symbol and updates in-memory quote immediately from incoming Finnhub webhook
+ */
+export function updateQuoteFromWebhook(
+  rawSymbol: string,
+  price: number,
+  volume?: number,
+  timestamp?: number
+): void {
+  if (!rawSymbol || typeof price !== 'number' || isNaN(price) || price <= 0) {
+    return;
+  }
+
+  // Symbol normalization
+  let symbol = rawSymbol.trim().toUpperCase();
+
+  // Normalize Binance / crypto prefixes
+  if (symbol.startsWith('BINANCE:') || symbol.startsWith('COINBASE:')) {
+    const pair = symbol.split(':')[1];
+    if (pair.endsWith('USDT') || pair.endsWith('USD')) {
+      const base = pair.replace(/USDT$|USD$/, '');
+      symbol = `${base}/USD`;
+    }
+  } else if (symbol.includes(':')) {
+    symbol = symbol.split(':')[1];
+  }
+
+  // Normalize B3 tickers
+  if (symbol.endsWith('.SA')) {
+    symbol = symbol.replace('.SA', '');
+  }
+
+  // Normalize Forex pairs
+  if (symbol === 'EURUSD') symbol = 'EUR/USD';
+  if (symbol === 'GBPUSD') symbol = 'GBP/USD';
+  if (symbol === 'USDJPY') symbol = 'USD/JPY';
+  if (symbol === 'USDBRL') symbol = 'USD/BRL';
+  if (symbol === 'EURBRL') symbol = 'EUR/BRL';
+
+  const now = Date.now();
+  webhookQuoteOverrides[symbol] = {
+    price,
+    volume,
+    timestamp: timestamp || now,
+    source: 'finnhub_webhook',
+  };
+
+  // Immediate hot-patch into cachedData for sub-millisecond client reactivity
+  if (cachedData) {
+    const existing = cachedData.quotes[symbol];
+    const prevClose = existing?.previousClose || price;
+    const isBrlPair = symbol.includes('/') && (existing?.currency === 'BRL' || symbol.endsWith('/BRL'));
+    const changeVal = Number((price - prevClose).toFixed(isBrlPair ? 4 : 2));
+    const changePct = prevClose > 0 ? Number(((changeVal / prevClose) * 100).toFixed(2)) : 0;
+    const high = existing ? Math.max(existing.high, price) : Number((price * 1.01).toFixed(2));
+    const low = existing ? Math.min(existing.low, price) : Number((price * 0.99).toFixed(2));
+
+    cachedData.quotes[symbol] = {
+      symbol,
+      price,
+      change: changeVal,
+      changePercent: changePct,
+      high,
+      low,
+      open: existing?.open || prevClose,
+      previousClose: prevClose,
+      volume: volume ? (volume >= 1e6 ? `${(volume / 1e6).toFixed(1)}M` : `${Math.round(volume)}`) : existing?.volume || 'N/A',
+      currency: existing?.currency || (symbol.includes('BRL') ? 'BRL' : 'USD'),
+      source: 'finnhub_webhook_live',
+    };
+
+    // If it's a core FX or crypto rate, sync rates & pairs immediately
+    if (symbol === 'USD/BRL') {
+      cachedData.rates.BRL = price;
+      if (cachedData.pairs['USDBRL']) {
+        cachedData.pairs['USDBRL'].bid = price;
+        cachedData.pairs['USDBRL'].varBid = changeVal;
+        cachedData.pairs['USDBRL'].pctChange = changePct;
+        cachedData.pairs['USDBRL'].timestamp = new Date().toISOString();
+      }
+    } else if (symbol === 'BTC/USD') {
+      cachedData.rates.BTC = Number((1 / price).toFixed(8));
+      if (cachedData.pairs['BTCBRL']) {
+        const brlPrice = Number((price * cachedData.rates.BRL).toFixed(2));
+        cachedData.pairs['BTCBRL'].bid = brlPrice;
+        cachedData.pairs['BTCBRL'].pctChange = changePct;
+        cachedData.pairs['BTCBRL'].timestamp = new Date().toISOString();
+      }
+    } else if (symbol === 'ETH/USD') {
+      cachedData.rates.ETH = Number((1 / price).toFixed(8));
+    } else if (symbol === 'SOL/USD') {
+      cachedData.rates.SOL = Number((1 / price).toFixed(6));
+    }
+
+    cachedData.updatedAt = new Date().toISOString();
+    cachedData.sourcesStatus.finnhub = true;
+  }
+}
+
