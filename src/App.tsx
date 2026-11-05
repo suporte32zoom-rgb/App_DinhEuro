@@ -31,9 +31,16 @@ import { LgpdConsentBanner } from './components/LgpdConsentBanner';
 
 const MainContent: React.FC = () => {
   const { activeTab } = useMarket();
+  const isTerminalMode = activeTab === 'daytrade' || activeTab === 'tape_reading';
 
   return (
-    <main className="max-w-7xl mx-auto px-3 sm:px-6 pt-5 sm:pt-6 flex-1 w-full">
+    <main
+      className={`${
+        isTerminalMode
+          ? 'w-full max-w-[1920px] mx-auto px-1 sm:px-2 pt-1 pb-1 flex-1 flex flex-col min-h-0 h-[calc(100vh-100px)] overflow-hidden'
+          : 'max-w-7xl mx-auto px-3 sm:px-6 pt-5 sm:pt-6 flex-1 w-full'
+      }`}
+    >
       {activeTab === 'dashboard' && <DashboardView />}
       {activeTab === 'mercados' && <MarketsView />}
       {activeTab === 'carteiras' && <PortfolioView />}
@@ -55,12 +62,16 @@ const MainContent: React.FC = () => {
 };
 
 const AppShell: React.FC = () => {
-  const { theme } = useMarket();
+  const { theme, activeTab } = useMarket();
+  const isTerminalMode = activeTab === 'daytrade' || activeTab === 'tape_reading';
+
   return (
     <div
       className={`min-h-screen ${
         theme === 'dark' ? 'bg-[#0B1320] text-slate-100' : 'bg-[#f4f6fa] text-slate-900'
-      } flex flex-col font-sans selection:bg-emerald-500 selection:text-white transition-colors duration-150`}
+      } flex flex-col font-sans selection:bg-emerald-500 selection:text-white transition-colors duration-150 ${
+        isTerminalMode ? 'h-screen overflow-hidden' : ''
+      }`}
     >
       {/* Real-time Top Marquee Ribbon */}
       <TickerTape />
@@ -77,8 +88,8 @@ const AppShell: React.FC = () => {
       {/* PWA Offline Mode Indicator */}
       <OfflineIndicator />
 
-      {/* Institutional Footer */}
-      <Footer />
+      {/* Institutional Footer (Hidden in Terminal Pro mode to eliminate vertical scroll) */}
+      {!isTerminalMode && <Footer />}
 
       {/* LGPD & Cookie Consent Persistent Banner */}
       <LgpdConsentBanner />
