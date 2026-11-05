@@ -8,6 +8,10 @@ import {
   Coins,
   ShieldCheck,
   CheckCircle2,
+  Sparkles,
+  ArrowUpRight,
+  PiggyBank,
+  Maximize2,
 } from 'lucide-react';
 import { useMarket } from '../context/MarketContext';
 import {
@@ -17,6 +21,7 @@ import {
   calculateProfitAndTax,
   formatCurrencyValue,
 } from '../utils/finance';
+import { CompoundInterestChart } from '../components/CompoundInterestChart';
 
 export const ToolsView: React.FC = () => {
   const { universalRates } = useMarket();
@@ -46,6 +51,35 @@ export const ToolsView: React.FC = () => {
     annualRatePercent: annualRate,
     years,
   });
+
+  const applyPreset = (preset: 'milhao' | 'aposentadoria' | 'independencia' | 'reserva') => {
+    switch (preset) {
+      case 'milhao':
+        setInitialPrincipal(5000);
+        setMonthlyContribution(1500);
+        setAnnualRate(11.5);
+        setYears(18);
+        break;
+      case 'aposentadoria':
+        setInitialPrincipal(10000);
+        setMonthlyContribution(2000);
+        setAnnualRate(10.5);
+        setYears(30);
+        break;
+      case 'independencia':
+        setInitialPrincipal(25000);
+        setMonthlyContribution(3000);
+        setAnnualRate(12.0);
+        setYears(15);
+        break;
+      case 'reserva':
+        setInitialPrincipal(2000);
+        setMonthlyContribution(800);
+        setAnnualRate(11.5);
+        setYears(3);
+        break;
+    }
+  };
 
   // --- 3. Inflação State ---
   const [inflationAmount, setInflationAmount] = useState<number>(50000);
@@ -248,129 +282,280 @@ export const ToolsView: React.FC = () => {
         </div>
       )}
 
-      {/* --- TOOL 2: JUROS COMPOSTOS --- */}
+      {/* --- TOOL 2: JUROS COMPOSTOS & RENDA FIXA --- */}
       {activeTool === 'juros' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 rounded-2xl bg-[#0d1627] border border-slate-800 p-5 sm:p-6 shadow-xl space-y-5">
-            <div>
-              <h2 className="text-base font-bold text-white">Calculadora de Juros Compostos</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Projeção de crescimento patrimonial com aportes mensais recorrentes.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="text-slate-400 block mb-1">Aporte Inicial (R$):</label>
-                <input
-                  type="number"
-                  value={initialPrincipal}
-                  onChange={(e) => setInitialPrincipal(Math.max(0, Number(e.target.value)))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono-numbers"
-                />
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 rounded-2xl bg-[#0d1627] border border-slate-800 p-5 sm:p-6 shadow-xl space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-white flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-emerald-400" />
+                    <span>Calculadora de Juros Compostos & Renda Fixa</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Simulação interativa da evolução do capital no tempo com aportes mensais e juros compostos.
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <label className="text-slate-400 block mb-1">Aporte Mensal (R$):</label>
-                <input
-                  type="number"
-                  value={monthlyContribution}
-                  onChange={(e) => setMonthlyContribution(Math.max(0, Number(e.target.value)))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono-numbers"
-                />
+              {/* Input Parameters Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-[#070e1b] p-4 rounded-xl border border-slate-800/80">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-400 font-medium">Aporte Inicial (R$):</label>
+                    <span className="text-slate-500 font-mono-numbers text-[11px]">Capital inicial</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={initialPrincipal}
+                    onChange={(e) => setInitialPrincipal(Math.max(0, Number(e.target.value)))}
+                    className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-white font-mono-numbers text-sm transition outline-none"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-400 font-medium">Aporte Mensal (R$):</label>
+                    <span className="text-emerald-400 font-mono-numbers text-[11px]">Recorrência mensal</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={monthlyContribution}
+                    onChange={(e) => setMonthlyContribution(Math.max(0, Number(e.target.value)))}
+                    className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-white font-mono-numbers text-sm transition outline-none"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-400 font-medium">Taxa de Juros Anual (% a.a.):</label>
+                    <span className="text-cyan-400 font-mono-numbers text-[11px]">
+                      ~{((Math.pow(1 + annualRate / 100, 1 / 12) - 1) * 100).toFixed(2)}% a.m.
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={annualRate}
+                    onChange={(e) => setAnnualRate(Math.max(0, Number(e.target.value)))}
+                    className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-white font-mono-numbers text-sm transition outline-none"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-400 font-medium">Prazo em Anos:</label>
+                    <span className="text-amber-400 font-mono-numbers text-[11px]">
+                      {years * 12} meses
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={years}
+                    onChange={(e) => setYears(Math.max(1, Number(e.target.value)))}
+                    className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-white font-mono-numbers text-sm transition outline-none"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="text-slate-400 block mb-1">Taxa de Juros Anual (% a.a.):</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={annualRate}
-                  onChange={(e) => setAnnualRate(Math.max(0, Number(e.target.value)))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono-numbers"
-                />
+              {/* Results Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-[#070e1b] rounded-xl p-3.5 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">Total Investido</span>
+                  <p className="text-lg font-bold font-mono-numbers text-blue-400 mt-1">
+                    {formatCurrencyValue(compoundResult.totalInvested, 'BRL')}
+                  </p>
+                  <span className="text-[10px] text-slate-500">Capital do seu bolso</span>
+                </div>
+
+                <div className="bg-[#070e1b] rounded-xl p-3.5 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">Total em Juros Ganhos</span>
+                  <p className="text-lg font-bold font-mono-numbers text-emerald-400 mt-1">
+                    +{formatCurrencyValue(compoundResult.totalInterest, 'BRL')}
+                  </p>
+                  <span className="text-[10px] text-emerald-500 font-semibold">
+                    {((compoundResult.totalInterest / compoundResult.finalBalance) * 100).toFixed(0)}% do saldo
+                  </span>
+                </div>
+
+                <div className="bg-[#070e1b] rounded-xl p-3.5 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">Montante Final</span>
+                  <p className="text-lg font-black font-mono-numbers text-amber-400 mt-1">
+                    {formatCurrencyValue(compoundResult.finalBalance, 'BRL')}
+                  </p>
+                  <span className="text-[10px] text-slate-500">Patrimônio acumulado</span>
+                </div>
               </div>
 
-              <div>
-                <label className="text-slate-400 block mb-1">Prazo em Anos:</label>
-                <input
-                  type="number"
-                  value={years}
-                  onChange={(e) => setYears(Math.max(1, Number(e.target.value)))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono-numbers"
-                />
-              </div>
-            </div>
+              {/* Recharts Visual Component */}
+              <CompoundInterestChart
+                initialPrincipal={initialPrincipal}
+                monthlyContribution={monthlyContribution}
+                annualRate={annualRate}
+                years={years}
+                breakdown={compoundResult.breakdown}
+                finalBalance={compoundResult.finalBalance}
+                totalInvested={compoundResult.totalInvested}
+                totalInterest={compoundResult.totalInterest}
+              />
 
-            {/* Results Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-              <div className="bg-[#070e1b] rounded-xl p-3.5 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase">Total Investido</span>
-                <p className="text-base font-bold font-mono-numbers text-white mt-1">
-                  {formatCurrencyValue(compoundResult.totalInvested, 'BRL')}
-                </p>
-              </div>
-
-              <div className="bg-[#070e1b] rounded-xl p-3.5 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase">Total em Juros Ganhos</span>
-                <p className="text-base font-bold font-mono-numbers text-emerald-400 mt-1">
-                  +{formatCurrencyValue(compoundResult.totalInterest, 'BRL')}
-                </p>
-              </div>
-
-              <div className="bg-[#070e1b] rounded-xl p-3.5 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase">Montante Final</span>
-                <p className="text-base font-black font-mono-numbers text-amber-400 mt-1">
-                  {formatCurrencyValue(compoundResult.finalBalance, 'BRL')}
-                </p>
-              </div>
-            </div>
-
-            {/* Annual Breakdown */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                Evolução Anual
-              </h3>
-              <div className="max-h-48 overflow-y-auto no-scrollbar rounded-xl border border-slate-800">
-                <table className="w-full text-left text-[11px]">
-                  <thead className="bg-[#070e1b] text-slate-400 border-b border-slate-800">
-                    <tr>
-                      <th className="py-2 px-3">Ano</th>
-                      <th className="py-2 px-3 text-right">Total Aportado</th>
-                      <th className="py-2 px-3 text-right">Juros Acumulados</th>
-                      <th className="py-2 px-3 text-right">Saldo Final</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60 font-mono-numbers">
-                    {compoundResult.breakdown.map((row) => (
-                      <tr key={row.year} className="hover:bg-slate-800/40">
-                        <td className="py-2 px-3 font-semibold text-white">Ano {row.year}</td>
-                        <td className="py-2 px-3 text-right text-slate-300">
-                          {formatCurrencyValue(row.totalInvested, 'BRL')}
-                        </td>
-                        <td className="py-2 px-3 text-right text-emerald-400">
-                          +{formatCurrencyValue(row.interestEarned, 'BRL')}
-                        </td>
-                        <td className="py-2 px-3 text-right font-bold text-amber-300">
-                          {formatCurrencyValue(row.totalBalance, 'BRL')}
-                        </td>
+              {/* Annual Breakdown Table */}
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                    Detalhamento Anual dos Aportes & Rendimentos
+                  </h3>
+                  <span className="text-[11px] text-slate-400 font-mono-numbers">
+                    {compoundResult.breakdown.length} períodos computados
+                  </span>
+                </div>
+                <div className="max-h-52 overflow-y-auto no-scrollbar rounded-xl border border-slate-800">
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="bg-[#070e1b] text-slate-400 border-b border-slate-800 sticky top-0">
+                      <tr>
+                        <th className="py-2.5 px-3">Ano</th>
+                        <th className="py-2.5 px-3 text-right">Total Aportado</th>
+                        <th className="py-2.5 px-3 text-right">Juros Acumulados</th>
+                        <th className="py-2.5 px-3 text-right">Saldo Final</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 font-mono-numbers">
+                      {compoundResult.breakdown.map((row) => (
+                        <tr key={row.year} className="hover:bg-slate-800/40 transition">
+                          <td className="py-2 px-3 font-semibold text-white">Ano {row.year}</td>
+                          <td className="py-2 px-3 text-right text-slate-300">
+                            {formatCurrencyValue(row.totalInvested, 'BRL')}
+                          </td>
+                          <td className="py-2 px-3 text-right text-emerald-400">
+                            +{formatCurrencyValue(row.interestEarned, 'BRL')}
+                          </td>
+                          <td className="py-2 px-3 text-right font-bold text-amber-300">
+                            {formatCurrencyValue(row.totalBalance, 'BRL')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="rounded-2xl bg-[#0d1627] border border-slate-800 p-5 shadow-xl space-y-4">
-            <h3 className="text-sm font-bold text-white">O Poder dos Juros Compostos</h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              No exemplo acima, os juros acumulados representam{' '}
-              <strong className="text-emerald-400 font-mono">
-                {((compoundResult.totalInterest / compoundResult.finalBalance) * 100).toFixed(1)}%
-              </strong>{' '}
-              de todo o patrimônio final conquistado. O tempo e a disciplina de aportes regulares são os maiores multiplicadores de capital.
-            </p>
+            {/* Right Column: Presets & Educational Strategy */}
+            <div className="space-y-5">
+              {/* Quick Presets */}
+              <div className="rounded-2xl bg-[#0d1627] border border-slate-800 p-5 shadow-xl space-y-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>Simulações Rápidas (Presets)</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Selecione um objetivo financeiro para configurar automaticamente os valores:
+                </p>
+                <div className="space-y-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => applyPreset('milhao')}
+                    className="w-full p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 text-left transition cursor-pointer flex items-center justify-between group"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
+                        Primeiro Milhão (R$ 1.000.000)
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        R$ 1.500/mês • 18 anos • 11.5% a.a.
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyPreset('aposentadoria')}
+                    className="w-full p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 text-left transition cursor-pointer flex items-center justify-between group"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
+                        Aposentadoria Confortável
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        R$ 2.000/mês • 30 anos • 10.5% a.a.
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyPreset('independencia')}
+                    className="w-full p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 text-left transition cursor-pointer flex items-center justify-between group"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
+                        Independência em 15 Anos
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        R$ 3.000/mês • 15 anos • 12% a.a.
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyPreset('reserva')}
+                    className="w-full p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 text-left transition cursor-pointer flex items-center justify-between group"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
+                        Reserva de Emergência
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        R$ 800/mês • 3 anos • 11.5% a.a.
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Educational Card */}
+              <div className="rounded-2xl bg-[#0d1627] border border-slate-800 p-5 shadow-xl space-y-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <PiggyBank className="w-4 h-4 text-emerald-400" />
+                  <span>O Poder do Efeito Bola de Neve</span>
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  No exemplo acima, os juros acumulados representam{' '}
+                  <strong className="text-emerald-400 font-mono-numbers">
+                    {((compoundResult.totalInterest / compoundResult.finalBalance) * 100).toFixed(1)}%
+                  </strong>{' '}
+                  de todo o patrimônio final conquistado.
+                </p>
+                <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span>Taxa Mensal Equivalente:</span>
+                    <span className="font-mono-numbers text-white">
+                      {((Math.pow(1 + annualRate / 100, 1 / 12) - 1) * 100).toFixed(2)}% a.m.
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Aporte Total no Período:</span>
+                    <span className="font-mono-numbers text-slate-300">
+                      {formatCurrencyValue(compoundResult.totalInvested, 'BRL')}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Juros Gerados no Período:</span>
+                    <span className="font-mono-numbers text-emerald-400 font-bold">
+                      +{formatCurrencyValue(compoundResult.totalInterest, 'BRL')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
