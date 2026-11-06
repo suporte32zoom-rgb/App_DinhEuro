@@ -87,7 +87,16 @@
         to { transform: rotate(360deg); }
       }
     </style>
-
+<script>
+      // Força o cancelamento e desativação de qualquer Service Worker travado
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister();
+          }
+        });
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
