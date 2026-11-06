@@ -52,6 +52,14 @@ Este guia resolve de forma definitiva o problema da "tela azul" na Hostinger ap�
 3. Clique em **Salvar** e **Iniciar / Reiniciar**.
 4. Neste modo, os webhooks (`/api/webhook/finnhub`) e o proxy de cotações em tempo real estarão 100% ativos com Express.
 
+### Opção 3: GitHub Pages com Domínio Personalizado (www.dinheuro.com)
+1. No repositório GitHub, acesse **Settings** > **Pages**.
+2. Em **Build and deployment** > **Source**:
+   - Selecione **GitHub Actions** (recomendado). O fluxo `.github/workflows/deploy.yml` compilará o Vite e publicará a pasta `dist` automaticamente a cada commit na branch `main`.
+   - O arquivo `CNAME` (`www.dinheuro.com`) e o roteador `404.html` para SPAs já estão configurados na pasta `/public` e incluídos na pasta `dist`.
+3. Em **Custom domain**, certifique-se de que está preenchido: `www.dinheuro.com` e marque **Enforce HTTPS**.
+4. Pronto! O domínio abrirá direto a versão compilada, sem erro de tela azul ou Document Root.
+
 ---
 
 ## 🛠️ Comandos de Build Local:
