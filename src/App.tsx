@@ -37,7 +37,7 @@ const MainContent: React.FC = () => {
     <main
       className={`${
         isTerminalMode
-          ? 'w-full max-w-[1920px] mx-auto px-1 sm:px-2 pt-1 pb-1 flex-1 flex flex-col min-h-0 h-[calc(100vh-100px)] overflow-hidden'
+          ? 'w-full max-w-[1920px] mx-auto px-0 sm:px-1 pt-0 pb-0 flex-1 flex flex-col min-h-0 h-[calc(100vh-66px)] overflow-hidden'
           : 'max-w-7xl mx-auto px-3 sm:px-6 pt-5 sm:pt-6 flex-1 w-full'
       }`}
     >
@@ -73,8 +73,8 @@ const AppShell: React.FC = () => {
         isTerminalMode ? 'h-screen overflow-hidden' : ''
       }`}
     >
-      {/* Real-time Top Marquee Ribbon */}
-      <TickerTape />
+      {/* Real-time Top Marquee Ribbon (Hidden in Day Trade Pro to use its integrated continuous ticker bar) */}
+      {activeTab !== 'daytrade' && <TickerTape />}
 
       {/* Global Responsive Navigation Header */}
       <Header />
