@@ -46,20 +46,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- SPA route restoration for GitHub Pages (spa-github-pages) -->
-    <script>
-      (function(l) {
-        if (l.search[1] === '/' ) {
-          var decoded = l.search.slice(1).split('&').map(function(s) { 
-            return s.replace(/~and~/g, '&')
-          }).join('?');
-          window.history.replaceState(null, null,
-              l.pathname.slice(0, -1) + decoded + l.hash
-          );
-        }
-      }(window.location))
-    </script>
   </head>
   <body class="bg-[#0b1320] text-slate-100 antialiased selection:bg-emerald-500 selection:text-white min-h-screen overflow-x-hidden font-sans">
     <div id="root">
@@ -87,19 +73,62 @@
         to { transform: rotate(360deg); }
       }
     </style>
-<script>
-  // Registro seguro do Service Worker (evita loop infinito de reload)
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        // Se houver service worker antigo travado, ele limpa e registra o novo de forma limpa
-        navigator.serviceWorker.register('./sw.js').catch((err) => {
-          console.warn('Registro silencioso do SW:', err);
-        });
-      });
-    });
-  }
-</script>
+
+    <!-- Script de proteção e diagnóstico para inicialização em produção -->
+    <script>
+      (function() {
+        // Se este index.html estiver sendo executado diretamente em produção sem Vite
+        // e o arquivo /src/main.tsx falhar, detecta e redireciona automaticamente para a versão compilada em /dist/
+        var hasVite = window.__vite_plugin_react_preamble_installed__ || window.location.port === '3000' || window.location.hostname === 'localhost';
+        
+        window.addEventListener('error', function(e) {
+          var target = e && e.target;
+          var isMainTsx = target && target.src && target.src.indexOf('main.tsx') !== -1;
+          var isSyntaxErr = e && e.message && (e.message.indexOf('SyntaxError') !== -1 || e.message.indexOf('MIME') !== -1);
+          
+          if (isMainTsx || (isSyntaxErr && !hasVite)) {
+            // Tenta abrir a versão compilada /dist/ automaticamente
+            if (window.location.pathname.indexOf('/dist') === -1) {
+              fetch('/dist/index.html', { method: 'HEAD' })
+                .then(function(res) {
+                  if (res.ok) {
+                    window.location.replace('/dist/' + window.location.search);
+                  } else {
+                    renderServerGuidance();
+                  }
+                })
+                .catch(function() {
+                  renderServerGuidance();
+                });
+            }
+          }
+        }, true);
+
+        function renderServerGuidance() {
+          var splash = document.getElementById('dinheuro-splash');
+          if (!splash) return;
+          splash.innerHTML = 
+            '<div style="background: rgba(15,23,42,0.98); border: 1px solid rgba(16,185,129,0.3); border-radius: 16px; padding: 28px; max-width: 520px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); text-align: left;">' +
+            '<div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">' +
+            '<div style="width:40px; height:40px; border-radius:10px; background:rgba(16,185,129,0.15); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:#10B981;">€</div>' +
+            '<div><h2 style="font-size:18px; font-weight:700; color:#F8FAFC; margin:0;">Publicação em Produção DinhEuro</h2>' +
+            '<p style="font-size:12px; color:#94A3B8; margin:2px 0 0 0;">Configuração de diretório de hospedagem</p></div>' +
+            '</div>' +
+            '<p style="color:#CBD5E1; font-size:13px; line-height:1.6; margin-bottom:14px;">' +
+            'Os arquivos do repositório foram detectados na raiz do servidor. No painel de gerenciamento do servidor web, certifique-se de:' +
+            '</p>' +
+            '<ol style="color:#94A3B8; font-size:12px; line-height:1.7; padding-left:20px; margin-bottom:18px;">' +
+            '<li>Acessar as configurações de domínio e arquivos do servidor web.</li>' +
+            '<li>Apontar o diretório raiz (Document Root) para a pasta <b>dist</b> (onde estão os assets de produção).</li>' +
+            '<li>Ou, se utilizar ambiente Node.js, executar com <b>server.js</b>.</li>' +
+            '</ol>' +
+            '<div style="display:flex; gap:10px; flex-wrap:wrap;">' +
+            '<a href="/dist/" style="display:inline-block; background:#10B981; color:#064E3B; font-weight:700; font-size:12px; padding:9px 16px; border-radius:8px; text-decoration:none;">Acessar /dist</a>' +
+            '<button onclick="location.reload()" style="background:#1E293B; color:#CBD5E1; font-weight:600; font-size:12px; padding:9px 16px; border-radius:8px; border:1px solid #334155; cursor:pointer;">Recarregar</button>' +
+            '</div>' +
+            '</div>';
+        }
+      })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
