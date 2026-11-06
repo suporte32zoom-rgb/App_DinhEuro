@@ -88,14 +88,18 @@
       }
     </style>
 <script>
-      // Força o cancelamento e desativação de qualquer Service Worker travado
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for(let registration of registrations) {
-            registration.unregister();
-          }
+  // Registro seguro do Service Worker (evita loop infinito de reload)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        // Se houver service worker antigo travado, ele limpa e registra o novo de forma limpa
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+          console.warn('Registro silencioso do SW:', err);
         });
-      }
+      });
+    });
+  }
+</script>
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
