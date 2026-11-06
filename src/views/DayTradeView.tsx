@@ -13,7 +13,6 @@ import {
   X,
   Square,
   SlidersHorizontal,
-  Key,
   Flame,
   ArrowRightLeft,
   ChevronDown,
@@ -101,22 +100,37 @@ const BROKERS_POOL = [
 export const DayTradeView: React.FC = () => {
   const { assets, news, universalRates, setActiveTab, openAssetDetail } = useMarket();
 
-  // Curated list of high-liquidity assets for Day Trading
+  // Curated list of high-liquidity assets for Day Trading dynamically connected to live assets
   const dayTradeAssets = useMemo(() => {
+    const ibov = assets.find((a) => a.symbol === 'IBOVESPA');
+    const usdBrl = assets.find((a) => a.symbol === 'USD/BRL');
+
+    const winPrice = ibov ? Math.round(ibov.price / 5) * 5 : 132450;
+    const winChange = ibov ? ibov.change24h : 0.68;
+    const winHigh = ibov ? Math.round(ibov.high24h / 5) * 5 : 133100;
+    const winLow = ibov ? Math.round(ibov.low24h / 5) * 5 : 131800;
+    const winSpark = ibov?.sparkline?.length ? ibov.sparkline.map((v) => Math.round(v / 5) * 5) : [131900, 132100, 132300, 132450];
+
+    const wdoPrice = usdBrl ? Number((usdBrl.price * 1000).toFixed(1)) : 5482.5;
+    const wdoChange = usdBrl ? usdBrl.change24h : -0.32;
+    const wdoHigh = usdBrl ? Number((usdBrl.high24h * 1000).toFixed(1)) : 5510.0;
+    const wdoLow = usdBrl ? Number((usdBrl.low24h * 1000).toFixed(1)) : 5468.0;
+    const wdoSpark = usdBrl?.sparkline?.length ? usdBrl.sparkline.map((v) => Number((v * 1000).toFixed(1))) : [5505, 5495, 5488, 5482.5];
+
     const customList = [
       {
         id: 'win_fut',
         symbol: 'WINFUT',
         name: 'Mini Índice B3 Futuro',
         category: 'indices',
-        price: 132450,
+        price: winPrice,
         currency: 'BRL',
-        change24h: 0.68,
-        changeValue: 890,
-        high24h: 133100,
-        low24h: 131800,
+        change24h: winChange,
+        changeValue: Number(((winPrice * winChange) / 100).toFixed(0)),
+        high24h: winHigh,
+        low24h: winLow,
         volume: '18.4B',
-        sparkline: [131900, 132100, 132300, 132450],
+        sparkline: winSpark,
         flag: '🇧🇷',
         tickSize: 5,
         tickValue: 1.0, // 5 pts = R$ 1.00 por contrato
@@ -127,14 +141,14 @@ export const DayTradeView: React.FC = () => {
         symbol: 'WDOFUT',
         name: 'Mini Dólar B3 Futuro',
         category: 'forex',
-        price: 5482.5,
+        price: wdoPrice,
         currency: 'BRL',
-        change24h: -0.32,
-        changeValue: -17.5,
-        high24h: 5510.0,
-        low24h: 5468.0,
+        change24h: wdoChange,
+        changeValue: Number(((wdoPrice * wdoChange) / 100).toFixed(1)),
+        high24h: wdoHigh,
+        low24h: wdoLow,
         volume: '12.8B',
-        sparkline: [5505, 5495, 5488, 5482.5],
+        sparkline: wdoSpark,
         flag: '🇧🇷',
         tickSize: 0.5,
         tickValue: 5.0, // 0.5 pt = R$ 5.00
@@ -176,9 +190,7 @@ export const DayTradeView: React.FC = () => {
   const [marketWatchCategory, setMarketWatchCategory] = useState<'Todos' | 'Ações' | 'Futuros' | 'Forex' | 'Cripto' | 'BDRs'>('Todos');
   const [marketWatchSearch, setMarketWatchSearch] = useState<string>('');
 
-  // Mode Toggle (Simulado vs Real)
-  const [operationMode, setOperationMode] = useState<'simulated' | 'real'>('simulated');
-  const [showRealBrokerModal, setShowRealBrokerModal] = useState<boolean>(false);
+  // Modals
   const [showRiskModal, setShowRiskModal] = useState<boolean>(false);
   const [showAlertModal, setShowAlertModal] = useState<boolean>(false);
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
@@ -508,60 +520,76 @@ export const DayTradeView: React.FC = () => {
   const losingTrades = totalTradesCount - winningTrades;
   const winRate = totalTradesCount > 0 ? Math.round((winningTrades / totalTradesCount) * 100) : 75;
 
-  // Global top continuous tickers list
+  // Global top continuous tickers list dynamically derived from real-time assets
   const globalTickers = useMemo(() => {
+    const getAsset = (sym: string) =>
+      assets.find(
+        (a) =>
+          a.symbol.toLowerCase() === sym.toLowerCase() ||
+          a.id.toLowerCase() === sym.toLowerCase() ||
+          a.name.toLowerCase().includes(sym.toLowerCase())
+      );
+
+    const ibov = getAsset('IBOVESPA');
+    const usdBrl = getAsset('USD/BRL');
+    const eurBrl = getAsset('EUR/BRL');
+    const sp500 = getAsset('S&P 500');
+    const btc = getAsset('BTC/USD');
+    const petr = getAsset('PETR4');
+    const vale = getAsset('VALE3');
+
     return [
       {
         symbol: 'IBOVESPA',
         label: 'IBOV',
-        price: '131.840',
-        change: +0.72,
-        spark: [130900, 131200, 131500, 131840],
+        price: ibov ? ibov.price.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '132.450',
+        change: ibov ? ibov.change24h : +0.68,
+        spark: ibov?.sparkline?.length ? ibov.sparkline : [131500, 131800, 132100, 132450],
       },
       {
         symbol: 'USD/BRL',
         label: 'DÓLAR',
-        price: 'R$ 5,482',
-        change: -0.35,
-        spark: [5.52, 5.50, 5.49, 5.482],
+        price: usdBrl ? `R$ ${usdBrl.price.toFixed(3).replace('.', ',')}` : 'R$ 5,459',
+        change: usdBrl ? usdBrl.change24h : -0.52,
+        spark: usdBrl?.sparkline?.length ? usdBrl.sparkline : [5.50, 5.48, 5.47, 5.459],
       },
       {
         symbol: 'EUR/BRL',
         label: 'EURO',
-        price: 'R$ 6,154',
-        change: +0.21,
-        spark: [6.12, 6.13, 6.14, 6.154],
+        price: eurBrl ? `R$ ${eurBrl.price.toFixed(3).replace('.', ',')}` : 'R$ 6,154',
+        change: eurBrl ? eurBrl.change24h : +0.21,
+        spark: eurBrl?.sparkline?.length ? eurBrl.sparkline : [6.12, 6.13, 6.14, 6.154],
       },
       {
         symbol: 'S&P 500',
         label: 'S&P 500',
-        price: '5.885,2',
-        change: +0.48,
-        spark: [5840, 5860, 5875, 5885],
+        price: sp500 ? sp500.price.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '5.885,2',
+        change: sp500 ? sp500.change24h : +0.48,
+        spark: sp500?.sparkline?.length ? sp500.sparkline : [5840, 5860, 5875, 5885],
       },
       {
         symbol: 'BTC/USD',
         label: 'BTC/USD',
-        price: '$ 87.950',
-        change: +1.84,
-        spark: [85200, 86400, 87100, 87950],
+        price: btc ? `$ ${btc.price.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}` : '$ 87.950',
+        change: btc ? btc.change24h : +1.84,
+        spark: btc?.sparkline?.length ? btc.sparkline : [85200, 86400, 87100, 87950],
       },
       {
         symbol: 'PETR4',
         label: 'PETR4',
-        price: 'R$ 38,65',
-        change: +1.15,
-        spark: [38.1, 38.3, 38.5, 38.65],
+        price: petr ? `R$ ${petr.price.toFixed(2).replace('.', ',')}` : 'R$ 38,65',
+        change: petr ? petr.change24h : +1.15,
+        spark: petr?.sparkline?.length ? petr.sparkline : [38.1, 38.3, 38.5, 38.65],
       },
       {
         symbol: 'VALE3',
         label: 'VALE3',
-        price: 'R$ 62,40',
-        change: -0.42,
-        spark: [62.9, 62.7, 62.5, 62.4],
+        price: vale ? `R$ ${vale.price.toFixed(2).replace('.', ',')}` : 'R$ 62,40',
+        change: vale ? vale.change24h : -0.42,
+        spark: vale?.sparkline?.length ? vale.sparkline : [62.9, 62.7, 62.5, 62.4],
       },
     ];
-  }, []);
+  }, [assets]);
 
   // Filtered market watch items
   const filteredMarketWatch = useMemo(() => {
@@ -639,29 +667,12 @@ export const DayTradeView: React.FC = () => {
           })}
         </div>
 
-        {/* Operation Mode Quick Toggle */}
+        {/* Paper Trading Status Badge (Real API button excluded as requested) */}
         <div className="flex items-center gap-1.5 shrink-0 pl-2 border-l border-slate-800 text-[10px]">
-          <div className="flex items-center bg-[#09111e] p-0.5 rounded border border-slate-800 font-bold">
-            <button
-              onClick={() => setOperationMode('simulated')}
-              className={`px-2 py-0.5 rounded transition cursor-pointer ${
-                operationMode === 'simulated' ? 'bg-emerald-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Simulador Paper
-            </button>
-            <button
-              onClick={() => {
-                setOperationMode('real');
-                setShowRealBrokerModal(true);
-              }}
-              className={`px-2 py-0.5 rounded transition cursor-pointer flex items-center gap-1 ${
-                operationMode === 'real' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Key className="w-2.5 h-2.5" /> Real API
-            </button>
-          </div>
+          <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/35 text-emerald-400 font-black uppercase tracking-wider shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Simulador Paper
+          </span>
         </div>
       </div>
 
@@ -1557,69 +1568,8 @@ export const DayTradeView: React.FC = () => {
       </footer>
 
       {/* =========================================================================
-          MODALS: REAL API BROKER, RISK SETTINGS, ALERTS, HELP
+          MODALS: RISK SETTINGS, ALERTS, HELP
          ========================================================================= */}
-      {showRealBrokerModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#0b1322] border border-slate-700 rounded-2xl max-w-lg w-full p-5 space-y-3 shadow-2xl text-left">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <div className="flex items-center gap-2">
-                <Key className="w-5 h-5 text-amber-400" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Conexão API Corretora (Modo Real)</h3>
-              </div>
-              <button onClick={() => setShowRealBrokerModal(false)} className="text-slate-400 hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Conecte sua conta em corretora credenciada B3 para envio de ordens reais via gateway seguro DinhEuro.
-            </p>
-
-            <div className="space-y-2 text-xs">
-              <div>
-                <label className="text-slate-400 block mb-1">Selecione sua Corretora:</label>
-                <select className="w-full bg-[#070e1b] border border-slate-700 rounded-xl px-3 py-2 text-white">
-                  <option>BTG Pactual Digital / Investimentos</option>
-                  <option>XP Investimentos</option>
-                  <option>Clear Corretora</option>
-                  <option>Genial Investimentos</option>
-                  <option>Interactive Brokers (Global)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-slate-400 block mb-1">API Key / Token Institucional:</label>
-                <input
-                  type="password"
-                  placeholder="insira sua chave privada de API..."
-                  className="w-full bg-[#070e1b] border border-slate-700 rounded-xl px-3 py-2 text-white font-mono-numbers"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-              <button
-                onClick={() => setShowRealBrokerModal(false)}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-bold"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  setShowRealBrokerModal(false);
-                  setOperationMode('simulated');
-                  setOrderNotification('Modo Real desativado por segurança. Operando no modo Simulado.');
-                  setTimeout(() => setOrderNotification(null), 3500);
-                }}
-                className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold"
-              >
-                Salvar Chave & Ativar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showRiskModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">

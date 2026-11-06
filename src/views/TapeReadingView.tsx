@@ -27,12 +27,12 @@ interface TapeReadingAsset {
 }
 
 const TAPE_ASSETS: TapeReadingAsset[] = [
-  { symbol: 'WIN$', name: 'Mini Índice B3 (Futuro)', type: 'Futuros B3', tickSize: 5, basePrice: 129450, unit: 'pts' },
-  { symbol: 'WDO$', name: 'Mini Dólar B3 (Futuro)', type: 'Futuros B3', tickSize: 0.5, basePrice: 5742.5, unit: 'pts' },
+  { symbol: 'WIN$', name: 'Mini Índice B3 (Futuro)', type: 'Futuros B3', tickSize: 5, basePrice: 132450, unit: 'pts' },
+  { symbol: 'WDO$', name: 'Mini Dólar B3 (Futuro)', type: 'Futuros B3', tickSize: 0.5, basePrice: 5780.0, unit: 'pts' },
   { symbol: 'PETR4', name: 'Petrobras PN', type: 'Ação B3', tickSize: 0.01, basePrice: 38.65, unit: 'R$' },
   { symbol: 'VALE3', name: 'Vale ON', type: 'Ação B3', tickSize: 0.01, basePrice: 62.40, unit: 'R$' },
-  { symbol: 'BTC/USD', name: 'Bitcoin Perpétuo', type: 'Cripto', tickSize: 1, basePrice: 87950, unit: '$' },
-  { symbol: 'ETH/USD', name: 'Ethereum Perpétuo', type: 'Cripto', tickSize: 0.1, basePrice: 2280.5, unit: '$' },
+  { symbol: 'BTC/USD', name: 'Bitcoin Perpétuo', type: 'Cripto', tickSize: 1, basePrice: 89500, unit: '$' },
+  { symbol: 'ETH/USD', name: 'Ethereum Perpétuo', type: 'Cripto', tickSize: 0.1, basePrice: 2650.0, unit: '$' },
 ];
 
 const BROKERS_LIST = [
@@ -81,11 +81,52 @@ interface BrokerPosition {
 }
 
 export const TapeReadingView: React.FC = () => {
-  const { universalRates } = useMarket();
+  const { universalRates, assets } = useMarket();
+
+  // Dynamic assets matching real-time market quotes
+  const dynamicTapeAssets = useMemo(() => {
+    const ibov = assets.find((a) => a.symbol === 'IBOVESPA');
+    const usdBrl = assets.find((a) => a.symbol === 'USD/BRL');
+    const petr4 = assets.find((a) => a.symbol === 'PETR4');
+    const vale3 = assets.find((a) => a.symbol === 'VALE3');
+    const btc = assets.find((a) => a.symbol === 'BTC');
+    const eth = assets.find((a) => a.symbol === 'ETH');
+
+    return TAPE_ASSETS.map((item) => {
+      if (item.symbol === 'WIN$' && ibov) {
+        return { ...item, basePrice: Math.round(ibov.price / 5) * 5 };
+      }
+      if (item.symbol === 'WDO$' && usdBrl) {
+        return { ...item, basePrice: Number((usdBrl.price * 1000).toFixed(1)) };
+      }
+      if (item.symbol === 'PETR4' && petr4) {
+        return { ...item, basePrice: petr4.price };
+      }
+      if (item.symbol === 'VALE3' && vale3) {
+        return { ...item, basePrice: vale3.price };
+      }
+      if (item.symbol === 'BTC/USD' && btc) {
+        return { ...item, basePrice: btc.price };
+      }
+      if (item.symbol === 'ETH/USD' && eth) {
+        return { ...item, basePrice: eth.price };
+      }
+      return item;
+    });
+  }, [assets]);
 
   // Selected active asset
   const [selectedAsset, setSelectedAsset] = useState<TapeReadingAsset>(TAPE_ASSETS[0]);
   const [currentPrice, setCurrentPrice] = useState<number>(selectedAsset.basePrice);
+
+  // Sync selectedAsset when dynamic base price updates
+  useEffect(() => {
+    const matched = dynamicTapeAssets.find((a) => a.symbol === selectedAsset.symbol);
+    if (matched && matched.basePrice !== selectedAsset.basePrice) {
+      setSelectedAsset(matched);
+      setCurrentPrice(matched.basePrice);
+    }
+  }, [dynamicTapeAssets, selectedAsset.symbol, selectedAsset.basePrice]);
 
   // Streaming control
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -313,13 +354,13 @@ export const TapeReadingView: React.FC = () => {
             <select
               value={selectedAsset.symbol}
               onChange={(e) => {
-                const found = TAPE_ASSETS.find((a) => a.symbol === e.target.value);
+                const found = dynamicTapeAssets.find((a) => a.symbol === e.target.value);
                 if (found) setSelectedAsset(found);
               }}
               aria-label="Selecionar ativo para Tape Reading"
               className="bg-[#0f1a2e] border border-slate-700 hover:border-emerald-500 rounded-md pl-2 pr-6 py-1 text-xs font-black text-white font-mono-numbers focus:outline-none cursor-pointer"
             >
-              {TAPE_ASSETS.map((a) => (
+              {dynamicTapeAssets.map((a) => (
                 <option key={a.symbol} value={a.symbol}>
                   {a.symbol} • {a.name}
                 </option>
@@ -330,7 +371,7 @@ export const TapeReadingView: React.FC = () => {
 
           {/* Quick asset tags */}
           <div className="hidden xl:flex items-center gap-1">
-            {TAPE_ASSETS.map((a) => (
+            {dynamicTapeAssets.map((a) => (
               <button
                 key={a.symbol}
                 onClick={() => setSelectedAsset(a)}
