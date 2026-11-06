@@ -550,7 +550,7 @@ export async function getAggregatedMarketData(): Promise<LiveMarketDataResponse>
       }
     }
 
-    // 7. News Items (Live from Finnhub if available)
+    // 7. News Items (Live from Finnhub and Global Feeds)
     let newsList: LiveMarketDataResponse['news'] = [];
     if (finnhubKey && finnhubKey !== 'MY_FINNHUB_API_KEY') {
       try {
@@ -568,6 +568,40 @@ export async function getAggregatedMarketData(): Promise<LiveMarketDataResponse>
               datetime: n.datetime ? new Date(n.datetime * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Agora',
               imageUrl: n.image,
             }));
+          }
+        }
+      } catch {
+        // continue
+      }
+    }
+
+    // Supplement with live continuous market headlines
+    if (newsList.length < 8) {
+      try {
+        const yNewsRes = await fetch('https://query1.finance.yahoo.com/v1/finance/search?q=brazil&quotesCount=0&newsCount=6', {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        });
+        if (yNewsRes.ok) {
+          const yNewsData = await yNewsRes.json();
+          if (Array.isArray(yNewsData?.news)) {
+            for (const yn of yNewsData.news) {
+              if (yn.title && !newsList.some((existing) => existing.title === yn.title)) {
+                newsList.push({
+                  id: `yn_${yn.uuid || Math.random().toString(36).slice(2)}`,
+                  title: yn.title,
+                  summary: yn.summary || yn.title,
+                  source: yn.publisher || 'Mercado Financeiro Internacional',
+                  url: yn.link || 'https://finance.yahoo.com',
+                  category: 'Macro',
+                  datetime: yn.providerPublishTime
+                    ? new Date(yn.providerPublishTime * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                    : 'Agora',
+                  imageUrl: yn.thumbnail?.resolutions?.[0]?.url,
+                });
+              }
+            }
           }
         }
       } catch {

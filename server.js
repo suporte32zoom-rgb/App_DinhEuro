@@ -802,6 +802,35 @@ async function getAggregatedMarketData() {
       } catch {
       }
     }
+    if (newsList.length < 8) {
+      try {
+        const yNewsRes = await fetch("https://query1.finance.yahoo.com/v1/finance/search?q=brazil&quotesCount=0&newsCount=6", {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          }
+        });
+        if (yNewsRes.ok) {
+          const yNewsData = await yNewsRes.json();
+          if (Array.isArray(yNewsData?.news)) {
+            for (const yn of yNewsData.news) {
+              if (yn.title && !newsList.some((existing) => existing.title === yn.title)) {
+                newsList.push({
+                  id: `yn_${yn.uuid || Math.random().toString(36).slice(2)}`,
+                  title: yn.title,
+                  summary: yn.summary || yn.title,
+                  source: yn.publisher || "Mercado Financeiro Internacional",
+                  url: yn.link || "https://finance.yahoo.com",
+                  category: "Macro",
+                  datetime: yn.providerPublishTime ? new Date(yn.providerPublishTime * 1e3).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "Agora",
+                  imageUrl: yn.thumbnail?.resolutions?.[0]?.url
+                });
+              }
+            }
+          }
+        }
+      } catch {
+      }
+    }
     for (const [sym, override] of Object.entries(webhookQuoteOverrides)) {
       if (override && override.price > 0) {
         const existing = quotes[sym];

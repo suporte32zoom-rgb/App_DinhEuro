@@ -16,6 +16,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useMarket } from '../context/MarketContext';
+import { getDualCurrencyDisplay } from '../utils/finance';
 
 interface TapeReadingAsset {
   symbol: string;
@@ -227,8 +228,10 @@ export const TapeReadingView: React.FC = () => {
         : Math.floor(Math.random() * 25 + 1);
 
       const tick = selectedAsset.tickSize;
-      const priceDelta = (Math.random() > 0.55 ? 1 : -1) * (Math.random() > 0.75 ? tick : 0);
-      const newPrice = Number((currentPrice + priceDelta).toFixed(selectedAsset.tickSize < 1 ? 2 : 0));
+      const maxSpread = tick * 2;
+      const rawDelta = currentPrice + (Math.random() > 0.55 ? tick : -tick) * (Math.random() > 0.7 ? 1 : 0) - selectedAsset.basePrice;
+      const clampedDelta = Math.max(-maxSpread, Math.min(maxSpread, rawDelta));
+      const newPrice = Number((selectedAsset.basePrice + clampedDelta).toFixed(selectedAsset.tickSize < 1 ? 2 : 0));
       setCurrentPrice(newPrice);
 
       const bBroker = BROKERS_LIST[Math.floor(Math.random() * BROKERS_LIST.length)];
@@ -386,12 +389,16 @@ export const TapeReadingView: React.FC = () => {
             ))}
           </div>
 
-          {/* Current Price */}
-          <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-800">
-            <span className="text-sm font-black font-mono-numbers text-white">
-              {formatPrice(currentPrice)}
+          {/* Current Price & Dual Currency Display */}
+          <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-800 font-mono-numbers">
+            <span className="text-sm font-black text-white">
+              {formatPrice(currentPrice)} {selectedAsset.unit}
             </span>
-            <span className="text-[10px] text-slate-400">{selectedAsset.unit}</span>
+            <span className="text-[10px] text-emerald-400 font-medium">
+              (≈ {selectedAsset.unit === 'R$' || selectedAsset.symbol.includes('WIN') || selectedAsset.symbol.includes('WDO')
+                ? getDualCurrencyDisplay(currentPrice, 'BRL', universalRates).secondaryFormatted
+                : getDualCurrencyDisplay(currentPrice, 'USD', universalRates).secondaryFormatted})
+            </span>
           </div>
         </div>
 

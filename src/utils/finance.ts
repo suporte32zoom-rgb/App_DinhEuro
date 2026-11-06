@@ -223,58 +223,116 @@ export function formatCurrencyValue(
 export interface DualCurrencyInfo {
   primaryFormatted: string;
   secondaryFormatted: string;
+  tertiaryFormatted: string;
   primaryCurrency: string;
   secondaryCurrency: string;
+  tertiaryCurrency: string;
   primaryValue: number;
   secondaryValue: number;
+  tertiaryValue: number;
   convertedBRL: number;
   convertedUSD: number;
+  convertedEUR: number;
+  summaryTriCurrency: string;
 }
 
 /**
- * Standardized Multicurrency Engine (USD and BRL):
+ * Standardized Multicurrency Engine (BRL, USD and EUR):
  * For every asset listed on DinhEuro:
- * - If asset is in USD (or foreign currency): displays native price in USD/foreign and converted equivalent in BRL.
- * - If asset is in BRL (like B3 Brazilian equities or IBOVESPA): displays native price in BRL and converted equivalent in USD.
- * - Always keeps synchronized dual USD/BRL representation in real-time.
+ * - If asset is in USD: displays native in USD, and converted in BRL and EUR.
+ * - If asset is in BRL: displays native in BRL, and converted in USD and EUR.
+ * - If asset is in EUR: displays native in EUR, and converted in BRL and USD.
+ * - Always keeps synchronized dual/tri currency representation in real-time.
  */
 export function getDualCurrencyDisplay(
   price: number,
   currency: string = 'USD',
-  rates: CurrencyRates = { USD: 1.0, BRL: 5.485 }
+  rates: CurrencyRates = { USD: 1.0, BRL: 5.485, EUR: 0.8905 }
 ): DualCurrencyInfo {
   const normCur = (currency || 'USD').toUpperCase();
   const brlRate = rates['BRL'] && rates['BRL'] > 0 ? rates['BRL'] : 5.485;
+  const eurRate = rates['EUR'] && rates['EUR'] > 0 ? rates['EUR'] : 0.8905;
   const curRate = rates[normCur] && rates[normCur] > 0 ? rates[normCur] : 1.0;
 
   // Convert to USD base first
-  const valueInUSD = normCur === 'USD' ? price : normCur === 'BRL' ? price / brlRate : price / curRate;
+  const valueInUSD = normCur === 'USD' ? price : normCur === 'BRL' ? price / brlRate : normCur === 'EUR' ? price / eurRate : price / curRate;
   const valueInBRL = valueInUSD * brlRate;
+  const valueInEUR = valueInUSD * eurRate;
 
   const decimals = normCur === 'JPY' ? 0 : price < 10 && normCur !== 'BRL' ? 4 : 2;
   const primaryFormatted = formatCurrencyValue(price, normCur, decimals);
 
   if (normCur === 'BRL') {
+    const secondaryFormatted = formatCurrencyValue(valueInUSD, 'USD', 2);
+    const tertiaryFormatted = formatCurrencyValue(valueInEUR, 'EUR', 2);
     return {
       primaryFormatted,
-      secondaryFormatted: formatCurrencyValue(valueInUSD, 'USD', 2),
+      secondaryFormatted,
+      tertiaryFormatted,
       primaryCurrency: 'BRL',
       secondaryCurrency: 'USD',
+      tertiaryCurrency: 'EUR',
       primaryValue: price,
       secondaryValue: valueInUSD,
+      tertiaryValue: valueInEUR,
       convertedBRL: price,
       convertedUSD: valueInUSD,
+      convertedEUR: valueInEUR,
+      summaryTriCurrency: `${primaryFormatted} (≈ ${secondaryFormatted} | ${tertiaryFormatted})`,
     };
-  } else {
+  } else if (normCur === 'USD') {
+    const secondaryFormatted = formatCurrencyValue(valueInBRL, 'BRL', 2);
+    const tertiaryFormatted = formatCurrencyValue(valueInEUR, 'EUR', 2);
     return {
       primaryFormatted,
-      secondaryFormatted: formatCurrencyValue(valueInBRL, 'BRL', 2),
-      primaryCurrency: normCur,
+      secondaryFormatted,
+      tertiaryFormatted,
+      primaryCurrency: 'USD',
       secondaryCurrency: 'BRL',
+      tertiaryCurrency: 'EUR',
       primaryValue: price,
       secondaryValue: valueInBRL,
+      tertiaryValue: valueInEUR,
+      convertedBRL: valueInBRL,
+      convertedUSD: price,
+      convertedEUR: valueInEUR,
+      summaryTriCurrency: `${primaryFormatted} (≈ ${secondaryFormatted} | ${tertiaryFormatted})`,
+    };
+  } else if (normCur === 'EUR') {
+    const secondaryFormatted = formatCurrencyValue(valueInBRL, 'BRL', 2);
+    const tertiaryFormatted = formatCurrencyValue(valueInUSD, 'USD', 2);
+    return {
+      primaryFormatted,
+      secondaryFormatted,
+      tertiaryFormatted,
+      primaryCurrency: 'EUR',
+      secondaryCurrency: 'BRL',
+      tertiaryCurrency: 'USD',
+      primaryValue: price,
+      secondaryValue: valueInBRL,
+      tertiaryValue: valueInUSD,
       convertedBRL: valueInBRL,
       convertedUSD: valueInUSD,
+      convertedEUR: price,
+      summaryTriCurrency: `${primaryFormatted} (≈ ${secondaryFormatted} | ${tertiaryFormatted})`,
+    };
+  } else {
+    const secondaryFormatted = formatCurrencyValue(valueInBRL, 'BRL', 2);
+    const tertiaryFormatted = formatCurrencyValue(valueInUSD, 'USD', 2);
+    return {
+      primaryFormatted,
+      secondaryFormatted,
+      tertiaryFormatted,
+      primaryCurrency: normCur,
+      secondaryCurrency: 'BRL',
+      tertiaryCurrency: 'USD',
+      primaryValue: price,
+      secondaryValue: valueInBRL,
+      tertiaryValue: valueInUSD,
+      convertedBRL: valueInBRL,
+      convertedUSD: valueInUSD,
+      convertedEUR: valueInEUR,
+      summaryTriCurrency: `${primaryFormatted} (≈ ${secondaryFormatted} | ${tertiaryFormatted})`,
     };
   }
 }

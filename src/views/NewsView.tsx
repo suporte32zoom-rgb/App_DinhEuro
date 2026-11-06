@@ -8,40 +8,8 @@ export const NewsView: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [newsSearch, setNewsSearch] = useState<string>('');
 
-  // Extended list of authoritative news items
-  const allNews: NewsItem[] = [
-    ...news,
-    {
-      id: 'news_extra_1',
-      title: 'Banco Central do Brasil sinaliza postura rígida e monitora expectativas de inflação de longo prazo',
-      summary: 'A ata do Copom destacou que a assimetria de riscos fiscais e a desvalorização cambial exigem cautela reforçada na condução da política monetária.',
-      source: 'Valor Econômico',
-      url: 'https://valor.globo.com/brasil/',
-      category: 'Macro',
-      datetime: 'Há 3 horas',
-      imageUrl: 'https://images.unsplash.com/photo-1541354329998-f4d9a9f9297f?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      id: 'news_extra_2',
-      title: 'Ações europeias fecham em alta com balanços corporativos de bancos e montadoras na Alemanha',
-      summary: 'O índice DAX de Frankfurt e o CAC de Paris avançaram após resultados trimestrais acima do consenso de analistas no setor industrial.',
-      source: 'Reuters',
-      url: 'https://www.reuters.com/markets/europe/',
-      category: 'Ações',
-      datetime: 'Há 4 horas',
-      imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      id: 'news_extra_3',
-      title: 'Mercado de Câmbio: O impacto do diferencial de juros Selic vs Fed Funds na trajetória do Real',
-      summary: 'Especialistas analisam os fluxos de carry trade e como as eleições nos Estados Unidos podem alterar as reservas globais e moedas emergentes.',
-      source: 'InfoMoney',
-      url: 'https://www.infomoney.com.br/mercados/cambio/',
-      category: 'Câmbio',
-      datetime: 'Há 5 horas',
-      imageUrl: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=600&q=80',
-    },
-  ];
+  // Centralized news stream dynamically fed by real-time market data
+  const allNews: NewsItem[] = news;
 
   const categories = [
     { id: 'all', label: 'Todas as Notícias' },
@@ -49,6 +17,7 @@ export const NewsView: React.FC = () => {
     { id: 'Câmbio', label: 'Câmbio & Euro' },
     { id: 'Ações', label: 'Ações & B3' },
     { id: 'Cripto', label: 'Criptoativos' },
+    { id: 'Geral', label: 'Commodities & Geral' },
   ];
 
   const filteredNews = allNews.filter((item) => {

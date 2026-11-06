@@ -36,7 +36,7 @@ import {
   Radio,
 } from 'lucide-react';
 import { useMarket, NavigationTab } from '../context/MarketContext';
-import { formatCurrencyValue } from '../utils/finance';
+import { formatCurrencyValue, getDualCurrencyDisplay } from '../utils/finance';
 import { MarketAsset } from '../services/marketData';
 
 export interface DayTradePosition {
@@ -98,7 +98,7 @@ const BROKERS_POOL = [
 ];
 
 export const DayTradeView: React.FC = () => {
-  const { assets, news, universalRates, setActiveTab, openAssetDetail } = useMarket();
+  const { assets, news, universalRates, setActiveTab, openAssetDetail, selectedAsset: globalSelectedAsset } = useMarket();
 
   // Curated list of high-liquidity assets for Day Trading dynamically connected to live assets
   const dayTradeAssets = useMemo(() => {
@@ -169,9 +169,23 @@ export const DayTradeView: React.FC = () => {
     return customList as (MarketAsset & { tickSize?: number; tickValue?: number; type: string })[];
   }, [assets]);
 
-  // Selected Active Asset
-  const [selectedSymbol, setSelectedSymbol] = useState<string>('WINFUT');
+  // Selected Active Asset (synchronized with global market navigation)
+  const [selectedSymbol, setSelectedSymbol] = useState<string>(() => {
+    return globalSelectedAsset?.symbol || 'WINFUT';
+  });
+
+  useEffect(() => {
+    if (globalSelectedAsset?.symbol) {
+      setSelectedSymbol(globalSelectedAsset.symbol);
+    }
+  }, [globalSelectedAsset]);
+
   const currentAsset = dayTradeAssets.find((a) => a.symbol === selectedSymbol) || dayTradeAssets[0];
+
+  // Dual and Tri-currency real-time synchronized representation
+  const dualAssetDisplay = useMemo(() => {
+    return getDualCurrencyDisplay(currentAsset.price, currentAsset.currency, universalRates);
+  }, [currentAsset.price, currentAsset.currency, universalRates]);
 
   // Active Main Center Tab
   const [activeCenterTab, setActiveCenterTab] = useState<'chart' | 'tape' | 'book' | 'indicators' | 'strategies'>('chart');
@@ -219,8 +233,8 @@ export const DayTradeView: React.FC = () => {
   const [takeProfitOffset, setTakeProfitOffset] = useState<number>(300);
   const [orderNotification, setOrderNotification] = useState<string | null>(null);
 
-  // Live price & tick state
-  const [currentMarketPrice, setCurrentMarketPrice] = useState<number>(currentAsset.price);
+  // Live price permanently tied to live central market price
+  const currentMarketPrice = currentAsset.price;
 
   // Session elapsed timer update
   useEffect(() => {
@@ -234,11 +248,10 @@ export const DayTradeView: React.FC = () => {
     return () => clearInterval(timerInterval);
   }, [sessionStartTime]);
 
-  // Synchronize price when asset changes
+  // Synchronize limit price when asset changes
   useEffect(() => {
-    setCurrentMarketPrice(currentAsset.price);
     setLimitPrice(currentAsset.price);
-  }, [currentAsset]);
+  }, [currentAsset.price, selectedSymbol]);
 
   // Floating P&L Calculation
   const floatingPnlBrl = useMemo(() => {
@@ -275,40 +288,48 @@ export const DayTradeView: React.FC = () => {
     }
   }, [totalDayPnl, dailyLossLimit, isRiskLocked, positions]);
 
-  // Simulated DOM Book and Times & Trades
+  // Deep Institutional DOM Book and Times & Trades
   const [bookOffers, setBookOffers] = useState<BookOffer[]>([]);
   const [timesAndTrades, setTimesAndTrades] = useState<TradeTapeItem[]>([]);
 
   useEffect(() => {
-    const step = currentAsset.symbol.includes('WIN') ? 5 : currentAsset.symbol.includes('WDO') ? 0.5 : 0.05;
-    const base = currentMarketPrice;
+    const step = currentAsset.tickSize || (currentAsset.symbol.includes('WIN') ? 5 : currentAsset.symbol.includes('WDO') ? 0.5 : currentAsset.price < 5 ? 0.01 : 0.05);
+    const base = currentAsset.price;
 
     const offers: BookOffer[] = [];
-    for (let i = 8; i >= -8; i--) {
+    let maxVol = 1;
+    for (let i = 12; i >= -12; i--) {
       if (i === 0) continue;
       const p = Number((base + i * step).toFixed(step < 1 ? 2 : 0));
-      const bQty = i < 0 ? Math.floor(Math.random() * 400 + 40) : 0;
-      const aQty = i > 0 ? Math.floor(Math.random() * 400 + 40) : 0;
+      const bQty = i < 0 ? Math.floor(Math.random() * 450 + 40) : 0;
+      const aQty = i > 0 ? Math.floor(Math.random() * 450 + 40) : 0;
+      if (bQty > maxVol) maxVol = bQty;
+      if (aQty > maxVol) maxVol = aQty;
       offers.push({
         price: p,
         bidQty: bQty,
         askQty: aQty,
-        bidVolPct: Math.min(100, Math.round((bQty / 500) * 100)),
-        askVolPct: Math.min(100, Math.round((aQty / 500) * 100)),
+        bidVolPct: 0,
+        askVolPct: 0,
         isPoc: i === -2,
       });
     }
-    setBookOffers(offers);
+    const normalizedOffers = offers.map((o) => ({
+      ...o,
+      bidVolPct: Math.min(100, Math.round((o.bidQty / maxVol) * 100)),
+      askVolPct: Math.min(100, Math.round((o.askQty / maxVol) * 100)),
+    }));
+    setBookOffers(normalizedOffers);
 
     const initialTrades: TradeTapeItem[] = [];
     const now = Date.now();
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 20; i++) {
       const side = Math.random() > 0.5 ? 'BUY' : 'SELL';
-      const offset = (Math.random() - 0.5) * step * 2;
+      const offset = (Math.random() - 0.5) * step * 1.5;
       const qty = Math.random() > 0.8 ? Math.floor(Math.random() * 70 + 30) : Math.floor(Math.random() * 20 + 2);
       initialTrades.push({
         id: `trade_${now}_${i}`,
-        time: new Date(now - i * 1500).toLocaleTimeString('pt-BR', {
+        time: new Date(now - i * 1200).toLocaleTimeString('pt-BR', {
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
@@ -322,18 +343,17 @@ export const DayTradeView: React.FC = () => {
       });
     }
     setTimesAndTrades(initialTrades);
-  }, [selectedSymbol, currentAsset]);
+  }, [selectedSymbol, currentAsset.price]);
 
-  // Live Jitter & Tape Stream
+  // Live Real-Time Tape Stream (anchored strictly around live asset price)
   useEffect(() => {
     const interval = setInterval(() => {
-      const step = currentAsset.symbol.includes('WIN') ? 5 : currentAsset.symbol.includes('WDO') ? 0.5 : 0.05;
-      const delta = (Math.random() - 0.49) * step;
-      const newPrice = Number((currentMarketPrice + delta).toFixed(step < 1 ? 2 : 0));
-      setCurrentMarketPrice(newPrice);
-
+      const step = currentAsset.tickSize || (currentAsset.symbol.includes('WIN') ? 5 : currentAsset.symbol.includes('WDO') ? 0.5 : currentAsset.price < 5 ? 0.01 : 0.05);
       const side: 'BUY' | 'SELL' = Math.random() > 0.48 ? 'BUY' : 'SELL';
+      const microOffset = (side === 'BUY' ? step * 0.5 : -step * 0.5) * (Math.random() > 0.5 ? 1 : 0);
+      const tickPrice = Number((currentAsset.price + microOffset).toFixed(step < 1 ? 2 : 0));
       const qty = Math.random() > 0.82 ? Math.floor(Math.random() * 80 + 35) : Math.floor(Math.random() * 25 + 2);
+
       const newTrade: TradeTapeItem = {
         id: `tick_${Date.now()}_${Math.random()}`,
         time: new Date().toLocaleTimeString('pt-BR', {
@@ -341,7 +361,7 @@ export const DayTradeView: React.FC = () => {
           minute: '2-digit',
           second: '2-digit',
         }),
-        price: newPrice,
+        price: tickPrice,
         qty,
         buyerBroker: BROKERS_POOL[Math.floor(Math.random() * BROKERS_POOL.length)],
         sellerBroker: BROKERS_POOL[Math.floor(Math.random() * BROKERS_POOL.length)],
@@ -349,11 +369,11 @@ export const DayTradeView: React.FC = () => {
         isLargeTrade: qty >= 40,
       };
 
-      setTimesAndTrades((prev) => [newTrade, ...prev.slice(0, 24)]);
-    }, 2500);
+      setTimesAndTrades((prev) => [newTrade, ...prev.slice(0, 35)]);
+    }, 2000);
 
     return () => clearInterval(interval);
-  }, [currentMarketPrice, currentAsset]);
+  }, [currentAsset]);
 
   // Order Execution Functions
   const handleExecuteOrder = (side: 'BUY' | 'SELL') => {
@@ -748,50 +768,96 @@ export const DayTradeView: React.FC = () => {
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {/* Top Asset & Function Tabs Header Strip */}
           <div className="bg-[#09111e] border-b border-slate-800 px-3 py-1.5 flex items-center justify-between gap-2 flex-wrap shrink-0">
-            {/* Left: Asset Select Dropdown & Current Price */}
+            {/* Left: Asset Select Dropdown & Current Price with Dual/Tri Conversion */}
             <div className="flex items-center gap-2">
               <div className="relative">
                 <select
                   value={selectedSymbol}
                   onChange={(e) => setSelectedSymbol(e.target.value)}
-                  aria-label="Selecionar ativo"
-                  className="bg-[#060c18] border border-slate-700 hover:border-emerald-500 rounded px-2 pr-6 py-1 text-xs font-black text-white font-mono-numbers outline-none cursor-pointer"
+                  aria-label="Selecionar ativo para Day Trade"
+                  className="bg-[#060c18] border border-slate-700 hover:border-emerald-500 rounded px-2 pr-6 py-1 text-xs font-black text-white font-mono-numbers outline-none cursor-pointer max-w-[210px] truncate"
                 >
                   <optgroup label="Futuros B3">
                     <option value="WINFUT">WINFUT • Mini Índice B3</option>
                     <option value="WDOFUT">WDOFUT • Mini Dólar B3</option>
                   </optgroup>
-                  <optgroup label="Ações B3">
-                    <option value="PETR4">PETR4 • Petrobras PN</option>
-                    <option value="VALE3">VALE3 • Vale ON</option>
-                    <option value="ITUB4">ITUB4 • Itaú Unibanco</option>
+                  <optgroup label="Ações Brasil (B3)">
+                    {dayTradeAssets
+                      .filter((a) => a.category === 'stocks_br')
+                      .map((a) => (
+                        <option key={a.id} value={a.symbol}>
+                          {a.symbol} • {a.name}
+                        </option>
+                      ))}
                   </optgroup>
-                  <optgroup label="Cripto & Global">
-                    <option value="BTC/USD">BTC/USD • Bitcoin</option>
-                    <option value="ETH/USD">ETH/USD • Ethereum</option>
-                    <option value="AAPL">AAPL • Apple</option>
-                    <option value="NVDA">NVDA • Nvidia</option>
+                  <optgroup label="Wall Street & BDRs">
+                    {dayTradeAssets
+                      .filter((a) => a.category === 'stocks_us')
+                      .map((a) => (
+                        <option key={a.id} value={a.symbol}>
+                          {a.symbol} • {a.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="Criptoativos">
+                    {dayTradeAssets
+                      .filter((a) => a.category === 'crypto')
+                      .map((a) => (
+                        <option key={a.id} value={a.symbol}>
+                          {a.symbol} • {a.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="Câmbio & Moedas">
+                    {dayTradeAssets
+                      .filter((a) => a.category === 'forex')
+                      .map((a) => (
+                        <option key={a.id} value={a.symbol}>
+                          {a.symbol} • {a.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="Índices Globais & Commodities">
+                    {dayTradeAssets
+                      .filter((a) => a.category === 'indices' || a.category === 'commodities')
+                      .map((a) => (
+                        <option key={a.id} value={a.symbol}>
+                          {a.symbol} • {a.name}
+                        </option>
+                      ))}
                   </optgroup>
                 </select>
                 <ChevronDown className="w-3 h-3 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
 
-              {/* Price & Variation */}
-              <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-800 font-mono-numbers">
-                <span className="text-base font-black text-white">
-                  {formatCurrencyValue(currentMarketPrice, currentAsset.currency)}
-                </span>
-                <span
-                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
-                    currentAsset.change24h >= 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'
-                  }`}
-                >
-                  {currentAsset.change24h >= 0 ? '+' : ''}
-                  {currentAsset.change24h}%
-                </span>
-                <span className="text-[10px] text-slate-500 hidden xl:inline">
-                  Mín: {currentAsset.low24h} | Máx: {currentAsset.high24h} | Vol: {currentAsset.volume}
-                </span>
+              {/* Price, 24h Variation & Synchronized Dual/Tri Currency Display */}
+              <div className="flex items-center gap-2 pl-2 border-l border-slate-800 font-mono-numbers">
+                <div className="flex flex-col leading-tight">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-sm sm:text-base font-black text-white">
+                      {formatCurrencyValue(currentMarketPrice, currentAsset.currency)}
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                        currentAsset.change24h >= 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'
+                      }`}
+                    >
+                      {currentAsset.change24h >= 0 ? '+' : ''}
+                      {currentAsset.change24h}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[9px] text-emerald-400/90 font-medium">
+                    <span>≈ {dualAssetDisplay.secondaryFormatted}</span>
+                    <span className="text-slate-600">|</span>
+                    <span className="text-slate-400">≈ {dualAssetDisplay.tertiaryFormatted}</span>
+                  </div>
+                </div>
+
+                <div className="hidden 2xl:flex items-center gap-2 text-[10px] text-slate-400 pl-2 border-l border-slate-800/80">
+                  <span>Mín: <strong className="text-slate-200">{formatCurrencyValue(currentAsset.low24h, currentAsset.currency)}</strong></span>
+                  <span>Máx: <strong className="text-slate-200">{formatCurrencyValue(currentAsset.high24h, currentAsset.currency)}</strong></span>
+                  <span>Vol: <strong className="text-slate-200">{currentAsset.volume}</strong></span>
+                </div>
               </div>
             </div>
 
@@ -1008,15 +1074,40 @@ export const DayTradeView: React.FC = () => {
             {/* Other functional views inside central pane */}
             {activeCenterTab === 'tape' && (
               <div className="w-full h-full flex flex-col rounded border border-slate-800 bg-[#070e1b] p-2 overflow-hidden">
-                <span className="font-bold text-white text-[11px] mb-1">Fita de Negócios Contínua (Times & Trades)</span>
+                <div className="flex items-center justify-between pb-1.5 mb-1 border-b border-slate-800 text-[11px] shrink-0">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                    Fita de Negócios Contínua (Times & Trades) • {currentAsset.symbol}
+                  </span>
+                  <div className="flex items-center gap-2 text-[10px] font-mono-numbers">
+                    <span className="text-slate-400">Preço Atual:</span>
+                    <strong className="text-white font-bold">{formatCurrencyValue(currentMarketPrice, currentAsset.currency)}</strong>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-5 py-1 px-2 text-[9px] font-bold text-slate-400 border-b border-slate-800/80 uppercase tracking-wider shrink-0">
+                  <span>Horário</span>
+                  <span>Preço Negociado</span>
+                  <span>Volume Lotes</span>
+                  <span>Comprador</span>
+                  <span className="text-right">Vendedor</span>
+                </div>
+
                 <div className="flex-1 overflow-y-auto no-scrollbar space-y-0.5 font-mono-numbers text-[10px]">
                   {timesAndTrades.map((t) => (
-                    <div key={t.id} className="grid grid-cols-5 py-0.5 px-1 rounded hover:bg-slate-800/40">
-                      <span className="text-slate-400">{t.time}</span>
-                      <span className={t.aggressor === 'BUY' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>{t.price}</span>
+                    <div
+                      key={t.id}
+                      className={`grid grid-cols-5 py-0.5 px-2 rounded transition hover:bg-slate-800/50 ${
+                        t.isLargeTrade ? 'bg-amber-500/10 border-l-2 border-amber-400' : ''
+                      }`}
+                    >
+                      <span className="text-slate-400 text-[9px]">{t.time}</span>
+                      <span className={`font-black ${t.aggressor === 'BUY' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {formatCurrencyValue(t.price, currentAsset.currency)}
+                      </span>
                       <span className="text-white font-bold">{t.qty} lotes</span>
-                      <span className="text-sky-300">{t.buyerBroker}</span>
-                      <span className="text-rose-300">{t.sellerBroker}</span>
+                      <span className="text-sky-300 font-medium">{t.buyerBroker}</span>
+                      <span className="text-rose-300 font-medium text-right">{t.sellerBroker}</span>
                     </div>
                   ))}
                 </div>
@@ -1025,13 +1116,53 @@ export const DayTradeView: React.FC = () => {
 
             {activeCenterTab === 'book' && (
               <div className="w-full h-full flex flex-col rounded border border-slate-800 bg-[#070e1b] p-2 overflow-hidden">
-                <span className="font-bold text-white text-[11px] mb-1">Livro de Ofertas Vertical (DOM Ladder)</span>
+                <div className="flex items-center justify-between pb-1.5 mb-1 border-b border-slate-800 text-[11px] shrink-0">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-sky-400" />
+                    Livro de Ofertas Vertical (DOM Ladder) • {currentAsset.symbol}
+                  </span>
+                  <div className="flex items-center gap-2 text-[10px] font-mono-numbers">
+                    <span className="text-emerald-400 font-bold">Compra: {bookOffers.reduce((a, b) => a + b.bidQty, 0)}</span>
+                    <span className="text-slate-600">|</span>
+                    <span className="text-rose-400 font-bold">Venda: {bookOffers.reduce((a, b) => a + b.askQty, 0)}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 py-1 px-2 text-[9px] font-bold text-slate-400 border-b border-slate-800/80 uppercase tracking-wider shrink-0">
+                  <span>Qtd Compra (Bid)</span>
+                  <span className="text-center">Preço Oficial</span>
+                  <span className="text-right">Qtd Venda (Ask)</span>
+                </div>
+
                 <div className="flex-1 overflow-y-auto no-scrollbar space-y-0.5 font-mono-numbers text-[10px]">
                   {bookOffers.map((b, idx) => (
-                    <div key={idx} className="grid grid-cols-3 py-0.5 px-2 rounded hover:bg-slate-800/40">
-                      <span className="text-sky-400 font-bold">{b.bidQty > 0 ? b.bidQty : ''}</span>
-                      <span className="text-center font-bold text-white">{b.price}</span>
-                      <span className="text-right text-rose-400 font-bold">{b.askQty > 0 ? b.askQty : ''}</span>
+                    <div
+                      key={idx}
+                      onClick={() => setLimitPrice(b.price)}
+                      title={`Clique para carregar preço limite ${b.price} na boleta`}
+                      className={`relative grid grid-cols-3 py-0.5 px-2 rounded transition cursor-pointer hover:bg-slate-800/60 ${
+                        b.isPoc ? 'bg-amber-500/10 border border-amber-500/30' : ''
+                      }`}
+                    >
+                      {/* Depth Bar Background for Bid / Ask */}
+                      {b.bidQty > 0 && (
+                        <div
+                          className="absolute left-0 top-0 bottom-0 bg-emerald-500/15 pointer-events-none rounded-l"
+                          style={{ width: `${b.bidVolPct / 2}%` }}
+                        />
+                      )}
+                      {b.askQty > 0 && (
+                        <div
+                          className="absolute right-0 top-0 bottom-0 bg-rose-500/15 pointer-events-none rounded-r"
+                          style={{ width: `${b.askVolPct / 2}%` }}
+                        />
+                      )}
+
+                      <span className="relative z-10 text-emerald-400 font-bold">{b.bidQty > 0 ? b.bidQty : ''}</span>
+                      <span className="relative z-10 text-center font-black text-white">
+                        {formatCurrencyValue(b.price, currentAsset.currency)}
+                      </span>
+                      <span className="relative z-10 text-right text-rose-400 font-bold">{b.askQty > 0 ? b.askQty : ''}</span>
                     </div>
                   ))}
                 </div>
@@ -1312,12 +1443,17 @@ export const DayTradeView: React.FC = () => {
                       <span className="text-[8px] text-slate-500">{item.type}</span>
                     </div>
                     <div className="text-right">
-                      <span className="font-bold text-white text-[10px] block">
-                        {item.price.toLocaleString('pt-BR', { minimumFractionDigits: item.tickSize && item.tickSize < 1 ? 2 : 0 })}
+                      <span className="font-bold text-white text-[10px] block font-mono-numbers">
+                        {formatCurrencyValue(item.price, item.currency)}
                       </span>
-                      <span className={`text-[9px] font-bold ${isPos ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {isPos ? '+' : ''}{item.change24h}%
-                      </span>
+                      <div className="flex items-center justify-end gap-1 text-[9px] font-mono-numbers">
+                        <span className="text-slate-400 text-[8px]">
+                          ≈ {getDualCurrencyDisplay(item.price, item.currency, universalRates).secondaryFormatted}
+                        </span>
+                        <span className={`font-bold ${isPos ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {isPos ? '+' : ''}{item.change24h}%
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -1494,7 +1630,9 @@ export const DayTradeView: React.FC = () => {
                     <ArrowUpRight className="w-3.5 h-3.5" />
                     <span>COMPRAR {contracts}x {currentAsset.symbol}</span>
                   </div>
-                  <span className="text-[10px] font-mono-numbers opacity-90">{currentMarketPrice}</span>
+                  <span className="text-[10px] font-mono-numbers opacity-90">
+                    {formatCurrencyValue(currentMarketPrice, currentAsset.currency)} (≈ {dualAssetDisplay.secondaryFormatted})
+                  </span>
                 </button>
               ) : (
                 <button
@@ -1506,7 +1644,9 @@ export const DayTradeView: React.FC = () => {
                     <ArrowDownRight className="w-3.5 h-3.5" />
                     <span>VENDER {contracts}x {currentAsset.symbol}</span>
                   </div>
-                  <span className="text-[10px] font-mono-numbers opacity-90">{currentMarketPrice}</span>
+                  <span className="text-[10px] font-mono-numbers opacity-90">
+                    {formatCurrencyValue(currentMarketPrice, currentAsset.currency)} (≈ {dualAssetDisplay.secondaryFormatted})
+                  </span>
                 </button>
               )}
 

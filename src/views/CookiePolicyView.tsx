@@ -129,7 +129,7 @@ export const CookiePolicyView: React.FC = () => {
               <div className="text-[11px] font-mono text-slate-400 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 space-y-1">
                 <div>• <strong className="text-slate-200">dinheuro_theme:</strong> guarda a seleção de Tema Escuro ou Claro.</div>
                 <div>• <strong className="text-slate-200">dinheuro_user_portfolio_v1:</strong> armazena os ativos e quantidades cadastradas na aba Minhas Carteiras no dispositivo do usuário.</div>
-                <div>• <strong className="text-slate-200">finnhub_api_key_custom:</strong> guarda chave de API informada voluntariamente para cotações proprietárias.</div>
+                <div>• <strong className="text-slate-200">dinheuro_market_pref:</strong> guarda preferências de exibição de cotações e sincronização de dados de mercado.</div>
               </div>
             </div>
 

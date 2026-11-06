@@ -5,11 +5,13 @@ interface DualPriceProps {
   price: number;
   currency: string;
   rates: CurrencyRates;
-  layout?: 'stacked' | 'inline' | 'compact';
+  layout?: 'stacked' | 'inline' | 'compact' | 'tri-currency';
   primaryClassName?: string;
   secondaryClassName?: string;
+  tertiaryClassName?: string;
   className?: string;
   showSecondaryBadge?: boolean;
+  showEur?: boolean;
 }
 
 export const DualPrice: React.FC<DualPriceProps> = ({
@@ -19,8 +21,10 @@ export const DualPrice: React.FC<DualPriceProps> = ({
   layout = 'stacked',
   primaryClassName = 'font-bold font-mono-numbers text-white',
   secondaryClassName = 'text-[11px] font-mono-numbers text-emerald-400/90 font-medium',
+  tertiaryClassName = 'text-[10px] font-mono-numbers text-slate-400 font-medium',
   className = '',
   showSecondaryBadge = false,
+  showEur = false,
 }) => {
   const dual = getDualCurrencyDisplay(price, currency, rates);
 
@@ -29,9 +33,22 @@ export const DualPrice: React.FC<DualPriceProps> = ({
       <span className={`inline-flex items-baseline gap-1.5 ${className}`}>
         <span className={primaryClassName}>{dual.primaryFormatted}</span>
         <span className={secondaryClassName}>
-          (≈ {dual.secondaryFormatted})
+          (≈ {dual.secondaryFormatted}{showEur ? ` · ${dual.tertiaryFormatted}` : ''})
         </span>
       </span>
+    );
+  }
+
+  if (layout === 'tri-currency') {
+    return (
+      <div className={`flex flex-col leading-tight ${className}`}>
+        <span className={primaryClassName}>{dual.primaryFormatted}</span>
+        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] font-mono-numbers">
+          <span className={secondaryClassName}>≈ {dual.secondaryFormatted}</span>
+          <span className="text-slate-600">|</span>
+          <span className={tertiaryClassName}>{dual.tertiaryFormatted}</span>
+        </div>
+      </div>
     );
   }
 
@@ -42,6 +59,11 @@ export const DualPrice: React.FC<DualPriceProps> = ({
         <span className={secondaryClassName}>
           ≈ {dual.secondaryFormatted}
         </span>
+        {showEur && (
+          <span className={tertiaryClassName}>
+            ≈ {dual.tertiaryFormatted}
+          </span>
+        )}
       </div>
     );
   }
@@ -60,6 +82,11 @@ export const DualPrice: React.FC<DualPriceProps> = ({
           </span>
         )}
       </div>
+      {showEur && (
+        <span className={`mt-0.5 ${tertiaryClassName}`}>
+          ≈ {dual.tertiaryFormatted}
+        </span>
+      )}
     </div>
   );
 };

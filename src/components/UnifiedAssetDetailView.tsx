@@ -36,7 +36,7 @@ export const UnifiedAssetDetailView: React.FC<UnifiedAssetDetailViewProps> = ({
   onBack,
   isModal = false,
 }) => {
-  const { assets, universalRates, addPortfolioPosition, setActiveTab } = useMarket();
+  const { assets, universalRates, addPortfolioPosition, setActiveTab, setSelectedAsset } = useMarket();
 
   // Local interaction states
   const [isFollowing, setIsFollowing] = useState(false);
@@ -107,8 +107,20 @@ export const UnifiedAssetDetailView: React.FC<UnifiedAssetDetailViewProps> = ({
             <span>Voltar para Visão Geral</span>
           </button>
 
-          {/* Action Buttons: Seguir Ativo, Adicionar Alerta, Adicionar ao Portfólio */}
+          {/* Action Buttons: Day Trade Pro, Seguir Ativo, Adicionar Alerta, Adicionar ao Portfólio */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Operar no Day Trade Pro */}
+            <button
+              onClick={() => {
+                setSelectedAsset(asset);
+                if (onBack) onBack();
+                setActiveTab('daytrade');
+              }}
+              className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/40 shadow-sm cursor-pointer transition active:scale-95"
+            >
+              <Activity className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Operar Day Trade Pro</span>
+            </button>
             {/* Seguir Ativo */}
             <button
               onClick={() => setIsFollowing((prev) => !prev)}
@@ -205,10 +217,16 @@ export const UnifiedAssetDetailView: React.FC<UnifiedAssetDetailViewProps> = ({
             <span className="text-3xl sm:text-4xl font-black font-mono-numbers text-white tracking-tight">
               {dual.primaryFormatted}
             </span>
-            {/* Moeda Convertida Equivalente */}
+            {/* Moeda Convertida Equivalente (Secundária) */}
             <span className="text-sm sm:text-base font-mono-numbers font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/25 shadow-sm">
               ≈ {dual.secondaryFormatted}
             </span>
+            {/* Moeda Convertida Equivalente (Terciária - EUR) */}
+            {dual.tertiaryFormatted && (
+              <span className="text-sm sm:text-base font-mono-numbers font-bold text-sky-400 bg-sky-500/10 px-2.5 py-1 rounded-lg border border-sky-500/25 shadow-sm">
+                ≈ {dual.tertiaryFormatted}
+              </span>
+            )}
           </div>
 
           {/* Taxa de câmbio de referência visível */}

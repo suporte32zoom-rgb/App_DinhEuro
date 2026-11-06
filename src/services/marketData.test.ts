@@ -52,4 +52,26 @@ describe('Real-Time Market Data Engine & Catalog Expansion', () => {
     assert.ok(counts.commodities >= 10, 'Expected at least 10 commodities');
     assert.ok(counts.forex >= 12, 'Expected at least 12 forex pairs');
   });
+
+  it('provides tri-currency conversion including EUR and tertiaryFormatted', () => {
+    const dual = getDualCurrencyDisplay(100, 'USD', DEFAULT_UNIVERSAL_RATES);
+    assert.strictEqual(dual.primaryCurrency, 'USD');
+    assert.strictEqual(dual.secondaryCurrency, 'BRL');
+    assert.ok(dual.convertedEUR > 0, `Expected positive EUR converted value, got ${dual.convertedEUR}`);
+    assert.ok(dual.tertiaryFormatted && dual.tertiaryFormatted.includes('€'), `Expected EUR tertiaryFormatted, got ${dual.tertiaryFormatted}`);
+    assert.ok(dual.summaryTriCurrency.includes('R$') && dual.summaryTriCurrency.includes('€'));
+  });
+
+  it('guarantees unique realistic volumes across assets without artificial duplication', () => {
+    const volCounts = new Map<string, number>();
+    for (const a of INITIAL_ASSETS) {
+      if (a.volume) {
+        volCounts.set(a.volume, (volCounts.get(a.volume) || 0) + 1);
+      }
+    }
+    // No single volume string should be blindly copied across more than 3 assets
+    for (const [vol, count] of volCounts.entries()) {
+      assert.ok(count <= 3, `Volume "${vol}" is duplicated across ${count} assets`);
+    }
+  });
 });
