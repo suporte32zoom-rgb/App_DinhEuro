@@ -1,50 +1,6 @@
 <!doctype html>
 <html lang="pt-BR">
   <head>
-    <script type="text/javascript">
-(function() {
-  var NativeWS = window.WebSocket;
-  if (NativeWS && typeof EventTarget !== 'undefined') {
-    class MockViteWS extends EventTarget {
-      constructor(url, protocols) {
-        if (protocols === 'vite-hmr' || protocols === 'vite-ping' || (typeof url === 'string' && (url.indexOf('token=') !== -1 || url.indexOf('vite') !== -1))) {
-          super();
-          this.readyState = 1;
-          this.url = url;
-          this.protocol = protocols || '';
-          setTimeout(() => {
-            try { this.dispatchEvent(new Event('open')); } catch(e) {}
-          }, 10);
-        } else {
-          return new NativeWS(url, protocols);
-        }
-      }
-      send() {}
-      close() {
-        this.readyState = 3;
-        try { this.dispatchEvent(new Event('close')); } catch(e) {}
-      }
-    }
-    MockViteWS.CONNECTING = 0;
-    MockViteWS.OPEN = 1;
-    MockViteWS.CLOSING = 2;
-    MockViteWS.CLOSED = 3;
-    window.WebSocket = MockViteWS;
-  }
-  var origConsoleError = console.error;
-  console.error = function() {
-    for (var i = 0; i < arguments.length; i++) {
-      var a = arguments[i];
-      var str = (a && (a.message || a.stack || String(a))) || '';
-      if (str.indexOf('WebSocket') !== -1 || str.indexOf('[vite]') !== -1 || str.indexOf('Illegal invocation') !== -1) {
-        return;
-      }
-    }
-    return origConsoleError.apply(console, arguments);
-  };
-})();
-</script>
-
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <title>DinhEuro - Hub Financeiro Global</title>
@@ -91,8 +47,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="./assets/index-DWZsUHxO.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BdMaNhTK.css">
+    <script type="module" crossorigin src="./assets/index-WDbezbD9.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-C74HEZzW.css">
   </head>
   <body class="bg-[#0b1320] text-slate-100 antialiased selection:bg-emerald-500 selection:text-white min-h-screen overflow-x-hidden font-sans">
     <div id="root">
@@ -119,17 +75,33 @@
 
     <!-- Registro defensivo e assíncrono do Service Worker (PWA dinheuro-v2-cache) -->
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .then(function(registration) {
-              console.log('[DinhEuro PWA] Service Worker registrado:', registration.scope);
-            })
-            .catch(function(err) {
-              console.warn('[DinhEuro PWA] Falha ao registrar Service Worker:', err);
-            });
-        });
-      }
+      // Failsafe timer: Garante que a tela de splash seja desfeita mesmo se houver lentidão de rede
+      (function() {
+        var timer = setTimeout(function() {
+          var splash = document.getElementById('dinheuro-splash');
+          if (splash && splash.parentElement) {
+            splash.style.transition = 'opacity 0.3s ease-out';
+            splash.style.opacity = '0';
+            setTimeout(function() {
+              if (splash && splash.parentElement) {
+                splash.parentElement.removeChild(splash);
+              }
+            }, 300);
+          }
+        }, 2500);
+
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js', { scope: './' })
+              .then(function(registration) {
+                console.log('[DinhEuro PWA] Service Worker registrado:', registration.scope);
+              })
+              .catch(function(err) {
+                console.warn('[DinhEuro PWA] Falha ao registrar Service Worker:', err);
+              });
+          });
+        }
+      })();
     </script>
   </body>
 </html>
