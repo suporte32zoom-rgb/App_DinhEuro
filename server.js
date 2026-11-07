@@ -478,7 +478,7 @@ var CRYPTO_LIST = [
   { id: "SUI/USD", symbol: "SUI/USD", name: "Sui Network", pairUsd: "SUI-USD", cgId: "sui", flag: "\u{1F310}" },
   { id: "APT/USD", symbol: "APT/USD", name: "Aptos", pairUsd: "APT-USD", cgId: "aptos", flag: "\u{1F310}" }
 ];
-async function getAggregatedMarketData() {
+async function getAggregatedMarketData(customFinnhubKey) {
   const now = Date.now();
   if (cachedData && now - lastCacheTime < CACHE_TTL_MS) {
     return cachedData;
@@ -488,7 +488,7 @@ async function getAggregatedMarketData() {
   }
   isRefreshing = true;
   try {
-    const finnhubKey = process.env.FINNHUB_API_KEY || "";
+    const finnhubKey = customFinnhubKey || process.env.FINNHUB_API_KEY || process.env.VITE_FINNHUB_API_KEY || "";
     const fmpKey = process.env.FMP_API_KEY || "";
     const sourcesStatus = {
       yahooFinance: false,
@@ -496,7 +496,8 @@ async function getAggregatedMarketData() {
       coingecko: false,
       ecb: false,
       finnhub: false,
-      fmp: false
+      fmp: false,
+      awesomeApi: false
     };
     const rates = {
       USD: 1,
@@ -515,12 +516,73 @@ async function getAggregatedMarketData() {
     const pairs = {};
     const quotes = {};
     try {
+      const awesomeRes = await fetch(
+        "https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL,ETH-BRL,CAD-BRL,AUD-BRL,CHF-BRL,JPY-BRL,CNY-BRL,ARS-BRL",
+        { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DinhEuro/3.0" } }
+      );
+      if (awesomeRes.ok) {
+        const aData = await awesomeRes.json();
+        if (aData && aData.USDBRL) {
+          sourcesStatus.awesomeApi = true;
+          const uBid = parseFloat(aData.USDBRL.bid);
+          if (uBid > 0) rates.BRL = uBid;
+          const mapAwesome = (key, dinhSym, code, name) => {
+            const item = aData[key];
+            if (item && item.bid) {
+              const bid = parseFloat(item.bid);
+              const ask = parseFloat(item.ask) || bid;
+              const high = parseFloat(item.high) || bid;
+              const low = parseFloat(item.low) || bid;
+              const varBid = parseFloat(item.varBid) || 0;
+              const pct = parseFloat(item.pctChange) || 0;
+              pairs[key] = {
+                code,
+                codein: "BRL",
+                name,
+                high,
+                low,
+                bid,
+                ask,
+                varBid,
+                pctChange: pct,
+                timestamp: item.create_date || (/* @__PURE__ */ new Date()).toISOString()
+              };
+              quotes[dinhSym] = {
+                symbol: dinhSym,
+                price: bid,
+                change: varBid,
+                changePercent: pct,
+                high,
+                low,
+                open: Number((bid - varBid).toFixed(4)),
+                previousClose: Number((bid - varBid).toFixed(4)),
+                volume: `${Math.abs(pct)}%`,
+                currency: "BRL",
+                source: "awesome_api_live"
+              };
+            }
+          };
+          mapAwesome("USDBRL", "USD/BRL", "USD", "D\xF3lar Comercial");
+          mapAwesome("EURBRL", "EUR/BRL", "EUR", "Euro Comercial");
+          mapAwesome("GBPBRL", "GBP/BRL", "GBP", "Libra Esterlina");
+          mapAwesome("CADBRL", "CAD/BRL", "CAD", "D\xF3lar Canadense");
+          mapAwesome("AUDBRL", "AUD/BRL", "AUD", "D\xF3lar Australiano");
+          mapAwesome("CHFBRL", "CHF/BRL", "CHF", "Franco Su\xED\xE7o");
+          mapAwesome("JPYBRL", "JPY/BRL", "JPY", "Iene Japon\xEAs");
+          mapAwesome("CNYBRL", "CNY/BRL", "CNY", "Yuan Chin\xEAs");
+          mapAwesome("BTCBRL", "BTC/BRL", "BTC", "Bitcoin em Reais");
+          mapAwesome("ETHBRL", "ETH/BRL", "ETH", "Ethereum em Reais");
+        }
+      }
+    } catch {
+    }
+    try {
       const frankRes = await fetch("https://api.frankfurter.dev/v1/latest?base=USD");
       if (frankRes.ok) {
         const frankData = await frankRes.json();
         if (frankData && frankData.rates) {
           sourcesStatus.ecb = true;
-          if (frankData.rates.BRL) rates.BRL = Number(frankData.rates.BRL);
+          if (frankData.rates.BRL && !sourcesStatus.awesomeApi) rates.BRL = Number(frankData.rates.BRL);
           if (frankData.rates.EUR) rates.EUR = Number(frankData.rates.EUR);
           if (frankData.rates.GBP) rates.GBP = Number(frankData.rates.GBP);
           if (frankData.rates.JPY) rates.JPY = Number(frankData.rates.JPY);
@@ -754,7 +816,35 @@ async function getAggregatedMarketData() {
       );
     }
     if (finnhubKey && finnhubKey !== "MY_FINNHUB_API_KEY") {
-      const priorityStocks = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA"];
+      const priorityStocks = [
+        "AAPL",
+        "MSFT",
+        "NVDA",
+        "AMZN",
+        "GOOGL",
+        "META",
+        "TSLA",
+        "BRK.B",
+        "JPM",
+        "V",
+        "WMT",
+        "PG",
+        "JNJ",
+        "DIS",
+        "NFLX",
+        "AMD",
+        "INTC",
+        "PYPL",
+        "CRM",
+        "CSCO",
+        "XOM",
+        "CVX",
+        "KO",
+        "PEP",
+        "BABA",
+        "SPY",
+        "QQQ"
+      ];
       for (const sym of priorityStocks) {
         try {
           const fhRes = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${finnhubKey}`);
@@ -1029,9 +1119,10 @@ async function startServer() {
   app.get("/api/webhook/finnhub/status", (_req, res) => {
     res.json(getWebhookStatus());
   });
-  app.get("/api/market/live", async (_req, res) => {
+  app.get("/api/market/live", async (req, res) => {
     try {
-      const data = await getAggregatedMarketData();
+      const customFinnhubKey = req.query.finnhub_key || req.headers["x-finnhub-key"];
+      const data = await getAggregatedMarketData(customFinnhubKey);
       res.json(data);
     } catch (err) {
       console.error("[DinhEuro] Erro ao agregar dados de mercado:", err);

@@ -66,9 +66,10 @@ async function startServer() {
   });
 
   // Real-time Aggregated Market Data API (Finnhub, AwesomeAPI, FMP, Coinbase, Yahoo Finance)
-  app.get('/api/market/live', async (_req: Request, res: Response) => {
+  app.get('/api/market/live', async (req: Request, res: Response) => {
     try {
-      const data = await getAggregatedMarketData();
+      const customFinnhubKey = (req.query.finnhub_key as string) || (req.headers['x-finnhub-key'] as string);
+      const data = await getAggregatedMarketData(customFinnhubKey);
       res.json(data);
     } catch (err) {
       console.error('[DinhEuro] Erro ao agregar dados de mercado:', err);

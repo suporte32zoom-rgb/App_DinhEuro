@@ -74,4 +74,21 @@ describe('Real-Time Market Data Engine & Catalog Expansion', () => {
       assert.ok(count <= 3, `Volume "${vol}" is duplicated across ${count} assets`);
     }
   });
+
+  it('validates Finnhub and Awesome API data normalization', () => {
+    // Test that USDBRL and BTC pairs in INITIAL_ASSETS match expected symbols
+    const usdBrl = INITIAL_ASSETS.find((a) => a.symbol === 'USD/BRL');
+    assert.ok(usdBrl, 'USD/BRL must exist in catalog');
+    assert.strictEqual(usdBrl.category, 'forex');
+    assert.strictEqual(usdBrl.currency, 'BRL');
+
+    const btcUsd = INITIAL_ASSETS.find((a) => a.symbol === 'BTC/USD');
+    assert.ok(btcUsd, 'BTC/USD must exist in catalog');
+    assert.strictEqual(btcUsd.category, 'crypto');
+
+    const aapl = INITIAL_ASSETS.find((a) => a.symbol === 'AAPL');
+    assert.ok(aapl, 'AAPL must exist in catalog');
+    assert.strictEqual(aapl.category, 'stocks_us');
+  });
 });
+

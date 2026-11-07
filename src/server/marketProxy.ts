@@ -70,6 +70,7 @@ export interface LiveMarketDataResponse {
     ecb: boolean;
     finnhub: boolean;
     fmp: boolean;
+    awesomeApi?: boolean;
   };
   updatedAt: string;
 }
@@ -212,7 +213,7 @@ export const CRYPTO_LIST = [
   { id: 'APT/USD', symbol: 'APT/USD', name: 'Aptos', pairUsd: 'APT-USD', cgId: 'aptos', flag: '🌐' },
 ];
 
-export async function getAggregatedMarketData(): Promise<LiveMarketDataResponse> {
+export async function getAggregatedMarketData(customFinnhubKey?: string): Promise<LiveMarketDataResponse> {
   const now = Date.now();
   if (cachedData && now - lastCacheTime < CACHE_TTL_MS) {
     return cachedData;
@@ -226,7 +227,7 @@ export async function getAggregatedMarketData(): Promise<LiveMarketDataResponse>
   isRefreshing = true;
 
   try {
-    const finnhubKey = process.env.FINNHUB_API_KEY || '';
+    const finnhubKey = customFinnhubKey || process.env.FINNHUB_API_KEY || process.env.VITE_FINNHUB_API_KEY || '';
     const fmpKey = process.env.FMP_API_KEY || '';
 
     const sourcesStatus = {
@@ -236,6 +237,7 @@ export async function getAggregatedMarketData(): Promise<LiveMarketDataResponse>
       ecb: false,
       finnhub: false,
       fmp: false,
+      awesomeApi: false,
     };
 
     // Initialize rates
@@ -257,14 +259,82 @@ export async function getAggregatedMarketData(): Promise<LiveMarketDataResponse>
     const pairs: Record<string, LiveRatePair> = {};
     const quotes: Record<string, LiveMarketQuote> = {};
 
-    // 1. Fetch live currency rates from Frankfurter / ECB
+    // 1. Fetch live currency and crypto rates directly from Awesome API
+    try {
+      const awesomeRes = await fetch(
+        'https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL,ETH-BRL,CAD-BRL,AUD-BRL,CHF-BRL,JPY-BRL,CNY-BRL,ARS-BRL',
+        { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) DinhEuro/3.0' } }
+      );
+      if (awesomeRes.ok) {
+        const aData = await awesomeRes.json();
+        if (aData && aData.USDBRL) {
+          sourcesStatus.awesomeApi = true;
+          const uBid = parseFloat(aData.USDBRL.bid);
+          if (uBid > 0) rates.BRL = uBid;
+
+          const mapAwesome = (key: string, dinhSym: string, code: string, name: string) => {
+            const item = aData[key];
+            if (item && item.bid) {
+              const bid = parseFloat(item.bid);
+              const ask = parseFloat(item.ask) || bid;
+              const high = parseFloat(item.high) || bid;
+              const low = parseFloat(item.low) || bid;
+              const varBid = parseFloat(item.varBid) || 0;
+              const pct = parseFloat(item.pctChange) || 0;
+
+              pairs[key] = {
+                code,
+                codein: 'BRL',
+                name,
+                high,
+                low,
+                bid,
+                ask,
+                varBid,
+                pctChange: pct,
+                timestamp: item.create_date || new Date().toISOString(),
+              };
+
+              quotes[dinhSym] = {
+                symbol: dinhSym,
+                price: bid,
+                change: varBid,
+                changePercent: pct,
+                high,
+                low,
+                open: Number((bid - varBid).toFixed(4)),
+                previousClose: Number((bid - varBid).toFixed(4)),
+                volume: `${Math.abs(pct)}%`,
+                currency: 'BRL',
+                source: 'awesome_api_live',
+              };
+            }
+          };
+
+          mapAwesome('USDBRL', 'USD/BRL', 'USD', 'Dólar Comercial');
+          mapAwesome('EURBRL', 'EUR/BRL', 'EUR', 'Euro Comercial');
+          mapAwesome('GBPBRL', 'GBP/BRL', 'GBP', 'Libra Esterlina');
+          mapAwesome('CADBRL', 'CAD/BRL', 'CAD', 'Dólar Canadense');
+          mapAwesome('AUDBRL', 'AUD/BRL', 'AUD', 'Dólar Australiano');
+          mapAwesome('CHFBRL', 'CHF/BRL', 'CHF', 'Franco Suíço');
+          mapAwesome('JPYBRL', 'JPY/BRL', 'JPY', 'Iene Japonês');
+          mapAwesome('CNYBRL', 'CNY/BRL', 'CNY', 'Yuan Chinês');
+          mapAwesome('BTCBRL', 'BTC/BRL', 'BTC', 'Bitcoin em Reais');
+          mapAwesome('ETHBRL', 'ETH/BRL', 'ETH', 'Ethereum em Reais');
+        }
+      }
+    } catch {
+      // Continue gracefully if Awesome API rate-limits
+    }
+
+    // 2. Fetch live currency rates from Frankfurter / European Central Bank
     try {
       const frankRes = await fetch('https://api.frankfurter.dev/v1/latest?base=USD');
       if (frankRes.ok) {
         const frankData = await frankRes.json();
         if (frankData && frankData.rates) {
           sourcesStatus.ecb = true;
-          if (frankData.rates.BRL) rates.BRL = Number(frankData.rates.BRL);
+          if (frankData.rates.BRL && !sourcesStatus.awesomeApi) rates.BRL = Number(frankData.rates.BRL);
           if (frankData.rates.EUR) rates.EUR = Number(frankData.rates.EUR);
           if (frankData.rates.GBP) rates.GBP = Number(frankData.rates.GBP);
           if (frankData.rates.JPY) rates.JPY = Number(frankData.rates.JPY);
@@ -522,7 +592,11 @@ export async function getAggregatedMarketData(): Promise<LiveMarketDataResponse>
 
     // 6. Supplement with Finnhub if configured
     if (finnhubKey && finnhubKey !== 'MY_FINNHUB_API_KEY') {
-      const priorityStocks = ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA'];
+      const priorityStocks = [
+        'AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'BRK.B',
+        'JPM', 'V', 'WMT', 'PG', 'JNJ', 'DIS', 'NFLX', 'AMD', 'INTC',
+        'PYPL', 'CRM', 'CSCO', 'XOM', 'CVX', 'KO', 'PEP', 'BABA', 'SPY', 'QQQ',
+      ];
       for (const sym of priorityStocks) {
         try {
           const fhRes = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${finnhubKey}`);

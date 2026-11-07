@@ -1858,43 +1858,105 @@ async function fetchDirectBrowserFallbacks(
     console.debug('[DinhEuro] Coinbase direct fallback indisponível:', err);
   }
 
-  // 2. AwesomeAPI Direta para pares oficiais em Reais (BRL)
+  // 2. AwesomeAPI Direta para pares oficiais em Reais (BRL) e Criptomoedas
   try {
-    const awesomeRes = await fetch('https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL');
+    const awesomeRes = await fetch(
+      'https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL,ETH-BRL,CAD-BRL,AUD-BRL,CHF-BRL,JPY-BRL,CNY-BRL,ARS-BRL'
+    );
     if (awesomeRes.ok) {
       const aData = await awesomeRes.json();
-      if (aData.USDBRL) {
-        const bid = parseFloat(aData.USDBRL.bid);
-        const pct = parseFloat(aData.USDBRL.pctChange);
-        liveRates.BRL = bid;
-        rawQuotes['USD/BRL'] = {
-          price: bid,
-          changePercent: pct,
-          high: parseFloat(aData.USDBRL.high),
-          low: parseFloat(aData.USDBRL.low),
-          symbol: 'USD/BRL',
-        };
-        rawQuotes['USDBRL'] = rawQuotes['USD/BRL'];
+      const mapPair = (key: string, dinhSym: string, rateKey?: keyof UniversalRates) => {
+        const item = aData[key];
+        if (item && item.bid) {
+          const bid = parseFloat(item.bid);
+          const varBid = parseFloat(item.varBid) || 0;
+          const pct = parseFloat(item.pctChange) || 0;
+          const high = parseFloat(item.high) || bid;
+          const low = parseFloat(item.low) || bid;
+
+          if (rateKey && bid > 0) {
+            liveRates[rateKey] = bid;
+          }
+
+          rawQuotes[dinhSym] = {
+            price: bid,
+            change: varBid,
+            changePercent: pct,
+            high,
+            low,
+            open: Number((bid - varBid).toFixed(4)),
+            previousClose: Number((bid - varBid).toFixed(4)),
+            symbol: dinhSym,
+            currency: 'BRL',
+            source: 'awesome_api_live',
+          };
+          rawQuotes[key] = rawQuotes[dinhSym];
+        }
+      };
+
+      mapPair('USDBRL', 'USD/BRL', 'BRL');
+      mapPair('EURBRL', 'EUR/BRL');
+      mapPair('GBPBRL', 'GBP/BRL');
+      mapPair('CADBRL', 'CAD/BRL');
+      mapPair('AUDBRL', 'AUD/BRL');
+      mapPair('CHFBRL', 'CHF/BRL');
+      mapPair('JPYBRL', 'JPY/BRL');
+      mapPair('CNYBRL', 'CNY/BRL');
+      mapPair('BTCBRL', 'BTC/BRL');
+      mapPair('ETHBRL', 'ETH/BRL');
+
+      if (aData.USDBRL && aData.BTCBRL) {
+        const usdBid = parseFloat(aData.USDBRL.bid);
+        const btcBrlBid = parseFloat(aData.BTCBRL.bid);
+        if (usdBid > 0 && btcBrlBid > 0) {
+          const btcUsdPrice = btcBrlBid / usdBid;
+          rawQuotes['BTC/USD'] = {
+            price: Number(btcUsdPrice.toFixed(2)),
+            changePercent: parseFloat(aData.BTCBRL.pctChange) || 0,
+            symbol: 'BTC/USD',
+            currency: 'USD',
+          };
+          rawQuotes['BTC'] = rawQuotes['BTC/USD'];
+        }
       }
-      if (aData.EURBRL) {
-        const bid = parseFloat(aData.EURBRL.bid);
-        const pct = parseFloat(aData.EURBRL.pctChange);
-        rawQuotes['EUR/BRL'] = {
-          price: bid,
-          changePercent: pct,
-          high: parseFloat(aData.EURBRL.high),
-          low: parseFloat(aData.EURBRL.low),
-          symbol: 'EUR/BRL',
-        };
-      }
-      if (aData.GBPBRL) {
-        const bid = parseFloat(aData.GBPBRL.bid);
-        rawQuotes['GBP/BRL'] = { price: bid, changePercent: parseFloat(aData.GBPBRL.pctChange), symbol: 'GBP/BRL' };
-      }
-      sourcesUsed.push('Câmbio Comercial');
+
+      sourcesUsed.push('Awesome API (Câmbio & Cripto em Tempo Real)');
     }
   } catch (err) {
     console.debug('[DinhEuro] Câmbio direto fallback indisponível:', err);
+  }
+
+  // 3. Finnhub API direto do navegador quando chave informada
+  const fhKey = getStoredFinnhubKey() || (import.meta as any).env?.VITE_FINNHUB_API_KEY || '';
+  if (fhKey && fhKey !== 'MY_FINNHUB_API_KEY') {
+    const prioritySymbols = ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'SPY', 'QQQ'];
+    await Promise.all(
+      prioritySymbols.map(async (sym) => {
+        try {
+          const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${fhKey}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.c && data.c > 0) {
+              rawQuotes[sym] = {
+                symbol: sym,
+                price: Number(data.c.toFixed(2)),
+                change: Number(data.d.toFixed(2)),
+                changePercent: Number(data.dp.toFixed(2)),
+                high: Number(data.h.toFixed(2)),
+                low: Number(data.l.toFixed(2)),
+                open: Number(data.o.toFixed(2)),
+                previousClose: Number(data.pc.toFixed(2)),
+                currency: 'USD',
+                source: 'finnhub_official',
+              };
+            }
+          }
+        } catch {
+          // continue
+        }
+      })
+    );
+    sourcesUsed.push('Finnhub Market Data');
   }
 }
 
@@ -1911,8 +1973,13 @@ export async function fetchCompleteLiveMarketData(currentAssets: MarketAsset[]):
   const sourcesUsed: string[] = [];
 
   let proxySucceeded = false;
+  const fhToken = getStoredFinnhubKey() || (import.meta as any).env?.VITE_FINNHUB_API_KEY || '';
+  const apiEndpoint = fhToken && fhToken !== 'MY_FINNHUB_API_KEY'
+    ? `/api/market/live?finnhub_key=${encodeURIComponent(fhToken)}`
+    : '/api/market/live';
+
   try {
-    const res = await fetch('/api/market/live');
+    const res = await fetch(apiEndpoint);
     const contentType = res.headers.get('content-type') || '';
     if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
@@ -1931,11 +1998,12 @@ export async function fetchCompleteLiveMarketData(currentAssets: MarketAsset[]):
       }
 
       if (data.sourcesStatus) {
+        if (data.sourcesStatus.awesomeApi) sourcesUsed.push('Awesome API (Câmbio & Cripto)');
+        if (data.sourcesStatus.finnhub) sourcesUsed.push('Finnhub Market Data');
         if (data.sourcesStatus.yahooFinance) sourcesUsed.push('Bolsas Mundiais & B3');
         if (data.sourcesStatus.coingecko) sourcesUsed.push('Mercado de Criptoativos');
         if (data.sourcesStatus.coinbase) sourcesUsed.push('Cotações de Paridade');
         if (data.sourcesStatus.ecb) sourcesUsed.push('Câmbio Interbancário Oficial');
-        if (data.sourcesStatus.finnhub) sourcesUsed.push('Mercado de Capitais');
       }
     }
   } catch (err) {
