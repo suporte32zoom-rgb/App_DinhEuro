@@ -1,1 +1,146 @@
-if(!self.define){let e,i={};const n=(n,s)=>(n=new URL(n+".js",s).href,i[n]||new Promise(i=>{if("document"in self){const e=document.createElement("script");e.src=n,e.onload=i,document.head.appendChild(e)}else e=n,importScripts(n),i()}).then(()=>{let e=i[n];if(!e)throw new Error(`Module ${n} didn’t register its module`);return e}));self.define=(s,o)=>{const a=e||("document"in self?document.currentScript.src:"")||location.href;if(i[a])return;let r={};const l=e=>n(e,a),t={module:{uri:a},exports:r,require:l};i[a]=Promise.all(s.map(e=>t[e]||l(e))).then(e=>(o(...e),r))}}define(["./workbox-835c8c05"],function(e){"use strict";self.skipWaiting(),e.clientsClaim(),e.precacheAndRoute([{url:"registerSW.js",revision:"1872c500de691dce40960bb85481de07"},{url:"pwa-512x512.png",revision:"73a76e0e5a34d0a417337b790c057411"},{url:"pwa-192x192.png",revision:"c6c3f7f226a29b62a9f3e6a9779204c7"},{url:"logo.png",revision:"73a76e0e5a34d0a417337b790c057411"},{url:"index.html",revision:"d75d330c0df47de7aba4e04ebf7362a8"},{url:"favicon.png",revision:"fd79ae1dd82d2a7d47222b5a98364cf5"},{url:"apple-touch-icon.png",revision:"467a9f4f633a0ef121eb35ae11725384"},{url:"assets/index-CWfdHAKK.css",revision:null},{url:"assets/index-BNuyyuE8.js",revision:null},{url:"assets/aistudio/imagem_nova_do_logo_de_abr_a16a1a50.png",revision:null},{url:"assets/aistudio/image_4298f63e.png",revision:null},{url:"assets/aistudio/dinheuro-20260604_114440_0000_e5c44739.png",revision:null},{url:"apple-touch-icon.png",revision:"467a9f4f633a0ef121eb35ae11725384"},{url:"logo.png",revision:"73a76e0e5a34d0a417337b790c057411"},{url:"pwa-192x192.png",revision:"c6c3f7f226a29b62a9f3e6a9779204c7"},{url:"pwa-512x512.png",revision:"73a76e0e5a34d0a417337b790c057411"},{url:"manifest.webmanifest",revision:"8ac6e9e7b750fe73c635c686642b74dd"}],{}),e.cleanupOutdatedCaches(),e.registerRoute(new e.NavigationRoute(e.createHandlerBoundToURL("index.html"))),e.registerRoute(/^https:\/\/fonts\.googleapis\.com\/.*/i,new e.CacheFirst({cacheName:"google-fonts-cache",plugins:[new e.ExpirationPlugin({maxEntries:10,maxAgeSeconds:31536e3}),new e.CacheableResponsePlugin({statuses:[0,200]})]}),"GET")});
+/**
+ * DinhEuro Service Worker - Versão 'dinheuro-v2-cache'
+ * Arquitetura PWA resiliente e defensiva:
+ * - Zero chamadas a window.location.reload()
+ * - Zero loops de recarregamento
+ * - Estratégia Network-First para APIs financeiras com fallback gracioso
+ * - Suporte offline completo para assets estáticos
+ */
+
+const CACHE_NAME = 'dinheuro-v2-cache';
+
+const STATIC_PRECACHE_URLS = [
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/favicon.png',
+  '/logo.png',
+  '/apple-touch-icon.png',
+  '/pwa-192x192.png',
+  '/pwa-512x512.png',
+];
+
+// Instalação do Service Worker e pré-cache de assets essenciais
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_PRECACHE_URLS).catch((err) => {
+        console.warn('[DinhEuro SW] Falha ao pré-cachear alguns itens:', err);
+      });
+    }).then(() => {
+      // Ativa imediatamente o novo service worker sem esperar fechamento das abas
+      return self.skipWaiting();
+    })
+  );
+});
+
+// Ativação e limpeza cirúrgica de caches obsoletos (ex: v1, legados)
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((name) => {
+          if (name !== CACHE_NAME) {
+            console.log('[DinhEuro SW] Removendo cache obsoleto:', name);
+            return caches.delete(name);
+          }
+        })
+      );
+    }).then(() => {
+      // Assume o controle de todos os clientes sem forçar reload
+      return self.clients.claim();
+    })
+  );
+});
+
+// Interceptação defensiva de requisições de rede
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+
+  // Ignora métodos não-GET (POST, PUT, DELETE, etc.)
+  if (req.method !== 'GET') {
+    return;
+  }
+
+  const url = new URL(req.url);
+
+  // Ignora requisições de extensões de navegador ou esquemas não-http
+  if (!url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // 1. APIs Financeiras (Awesome API, Finnhub, Coinbase, CoinGecko, ECB, FMP):
+  // Estratégia Network-First com cache de contingência silencioso
+  const isFinancialApi =
+    url.hostname.includes('awesomeapi.com.br') ||
+    url.hostname.includes('finnhub.io') ||
+    url.hostname.includes('coinbase.com') ||
+    url.hostname.includes('coingecko.com') ||
+    url.hostname.includes('frankfurter.dev') ||
+    url.hostname.includes('financialmodelingprep.com') ||
+    url.pathname.startsWith('/api/');
+
+  if (isFinancialApi) {
+    event.respondWith(
+      fetch(req)
+        .then((networkResponse) => {
+          // Se a resposta for válida, armazena no cache para uso offline
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(req, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          // Fallback gracioso: tenta retornar o último dado em cache
+          const cachedResponse = await caches.match(req);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // Se não houver cache, retorna JSON vazio seguro (sem quebrar a aplicação)
+          return new Response(JSON.stringify({ offline: true, error: 'Offline mode' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        })
+    );
+    return;
+  }
+
+  // 2. Navegação SPA (rotas como /mercados, /day-trade, /carteiras):
+  // Tenta rede primeiro, com fallback para o index.html em cache
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req).catch(async () => {
+        const cachedIndex = await caches.match('/index.html');
+        if (cachedIndex) {
+          return cachedIndex;
+        }
+        return caches.match('/');
+      })
+    );
+    return;
+  }
+
+  // 3. Assets Estáticos (JS, CSS, Imagens, Fontes):
+  // Estratégia Stale-While-Revalidate para velocidade máxima
+  event.respondWith(
+    caches.match(req).then((cachedResponse) => {
+      const fetchPromise = fetch(req)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(req, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => cachedResponse);
+
+      return cachedResponse || fetchPromise;
+    })
+  );
+});

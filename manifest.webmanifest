@@ -1,1 +1,32 @@
-{"name":"DinhEuro - Hub Financeiro Global","short_name":"DinhEuro","description":"Hub financeiro global com cotações em tempo real, simulador de câmbio universal, ações mundiais e B3, cripto e carteiras.","start_url":"/","display":"standalone","background_color":"#0B1320","theme_color":"#0B1320","lang":"en","scope":"/","id":"/","icons":[{"src":"/pwa-192x192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"/pwa-512x512.png","sizes":"512x512","type":"image/png","purpose":"any"}]}
+{
+  "id": "/",
+  "name": "DinhEuro - Hub Financeiro Global",
+  "short_name": "DinhEuro",
+  "description": "Hub financeiro global com cotações em tempo real, simulador de câmbio universal, ações mundiais e B3, cripto e carteiras.",
+  "theme_color": "#0B1320",
+  "background_color": "#0B1320",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
