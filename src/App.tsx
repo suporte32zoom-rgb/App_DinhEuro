@@ -10,6 +10,7 @@ import { TickerTape } from './components/TickerTape';
 import { Footer } from './components/Footer';
 import { AssetDetailModal } from './components/AssetDetailModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { DashboardView } from './views/DashboardView';
 import { MarketsView } from './views/MarketsView';
@@ -82,7 +83,9 @@ const AppShell: React.FC = () => {
       {activeTab !== 'daytrade' && <Header />}
 
       {/* Dynamic Route View */}
-      <MainContent />
+      <ErrorBoundary>
+        <MainContent />
+      </ErrorBoundary>
 
       {/* Interactive Asset Detail & Candlestick Modal */}
       <AssetDetailModal />
@@ -101,8 +104,10 @@ const AppShell: React.FC = () => {
 
 export default function App() {
   return (
-    <MarketProvider>
-      <AppShell />
-    </MarketProvider>
+    <ErrorBoundary>
+      <MarketProvider>
+        <AppShell />
+      </MarketProvider>
+    </ErrorBoundary>
   );
 }

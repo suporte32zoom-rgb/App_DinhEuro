@@ -28,20 +28,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="DinhEuro" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="shortcut icon" href="/favicon.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="shortcut icon" href="./favicon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     
     <!-- OpenGraph / Social -->
     <meta property="og:title" content="DinhEuro - Hub Financeiro Global" />
     <meta property="og:description" content="Plataforma e hub financeiro global com cotações em tempo real, simulador de câmbio universal, ações mundiais e B3, cripto, carteiras e análises de mercado." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/logo.png" />
+    <meta property="og:image" content="./logo.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="DinhEuro - Hub Financeiro Global" />
     <meta name="twitter:description" content="Plataforma e hub financeiro global com cotações em tempo real, simulador de câmbio universal, ações mundiais e B3, cripto, carteiras e análises de mercado." />
-    <meta name="twitter:image" content="/logo.png" />
+    <meta name="twitter:image" content="./logo.png" />
     
     <!-- Google Fonts for Financial UI (Inter + JetBrains Mono for figures) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -77,19 +77,35 @@
 
     <!-- Registro defensivo e assíncrono do Service Worker (PWA dinheuro-v2-cache) -->
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .then(function(registration) {
-              console.log('[DinhEuro PWA] Service Worker registrado:', registration.scope);
-            })
-            .catch(function(err) {
-              console.warn('[DinhEuro PWA] Falha ao registrar Service Worker:', err);
-            });
-        });
-      }
+      // Failsafe timer: Garante que a tela de splash seja desfeita mesmo se houver lentidão de rede
+      (function() {
+        var timer = setTimeout(function() {
+          var splash = document.getElementById('dinheuro-splash');
+          if (splash && splash.parentElement) {
+            splash.style.transition = 'opacity 0.3s ease-out';
+            splash.style.opacity = '0';
+            setTimeout(function() {
+              if (splash && splash.parentElement) {
+                splash.parentElement.removeChild(splash);
+              }
+            }, 300);
+          }
+        }, 2500);
+
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js', { scope: './' })
+              .then(function(registration) {
+                console.log('[DinhEuro PWA] Service Worker registrado:', registration.scope);
+              })
+              .catch(function(err) {
+                console.warn('[DinhEuro PWA] Falha ao registrar Service Worker:', err);
+              });
+          });
+        }
+      })();
     </script>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>
 

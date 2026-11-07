@@ -10,6 +10,7 @@ export default defineConfig(() => {
       tailwindcss(),
       {
         name: 'suppress-vite-hmr-ws-error',
+        apply: 'serve',
         transformIndexHtml: {
           order: 'pre',
           handler() {
@@ -24,8 +25,8 @@ export default defineConfig(() => {
   if (NativeWS && typeof EventTarget !== 'undefined') {
     class MockViteWS extends EventTarget {
       constructor(url, protocols) {
+        super();
         if (protocols === 'vite-hmr' || protocols === 'vite-ping' || (typeof url === 'string' && (url.indexOf('token=') !== -1 || url.indexOf('vite') !== -1))) {
-          super();
           this.readyState = 1;
           this.url = url;
           this.protocol = protocols || '';
