@@ -104,6 +104,8 @@ interface MarketContextType {
   finnhubKey: string;
   updateFinnhubKey: (key: string) => void;
   isLiveUpdating: boolean;
+  isSyncing: boolean;
+  syncStatus: 'syncing' | 'live' | 'offline';
   lastUpdated: Date;
   refreshData: () => Promise<void>;
   displayCurrency: 'BRL' | 'EUR' | 'USD';
@@ -184,6 +186,8 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [selectedAsset, setSelectedAsset] = useState<MarketAsset | null>(null);
   const [finnhubKey, setFinnhubKey] = useState<string>(getStoredFinnhubKey());
   const [isLiveUpdating, setIsLiveUpdating] = useState<boolean>(true);
+  const [isSyncing, setIsSyncing] = useState<boolean>(true);
+  const [syncStatus, setSyncStatus] = useState<'syncing' | 'live' | 'offline'>('syncing');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [displayCurrency, setDisplayCurrency] = useState<'BRL' | 'EUR' | 'USD'>('BRL');
   const [apiSourceSummary, setApiSourceSummary] = useState<string>('Bolsas Mundiais • Câmbio Interbancário • Criptoativos Globais');
@@ -323,8 +327,9 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setStoredFinnhubKey(key);
   }, []);
 
-  // Fetch live market data across all integrated APIs (Yahoo Finance, Coinbase, CoinGecko, BCE, Finnhub)
+  // Fetch live market data across all integrated APIs (Awesome API, Finnhub, BCE, Coinbase, CoinGecko)
   const refreshData = useCallback(async () => {
+    setIsSyncing(true);
     try {
       const snapshot = await fetchCompleteLiveMarketData(assetsRef.current);
       if (snapshot.rates) {
@@ -340,8 +345,12 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setApiSourceSummary(snapshot.sourceSummary);
       }
       setLastUpdated(new Date());
+      setSyncStatus('live');
     } catch (err) {
       console.warn('[DinhEuro] Erro ao sincronizar mercado em tempo real:', err);
+      setSyncStatus('offline');
+    } finally {
+      setIsSyncing(false);
     }
   }, []);
 
@@ -374,6 +383,8 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         finnhubKey,
         updateFinnhubKey,
         isLiveUpdating,
+        isSyncing,
+        syncStatus,
         lastUpdated,
         refreshData,
         displayCurrency,

@@ -32,6 +32,8 @@ export const Header: React.FC = () => {
     universalRates,
     refreshData,
     lastUpdated,
+    isSyncing,
+    syncStatus,
   } = useMarket();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -228,6 +230,28 @@ export const Header: React.FC = () => {
                 <span className="hidden lg:inline text-[11px]">Tema Escuro</span>
               </>
             )}
+          </button>
+
+          {/* Real-time Sync Status Button */}
+          <button
+            onClick={() => refreshData()}
+            disabled={isSyncing}
+            aria-label="Atualizar cotações em tempo real"
+            title={syncStatus === 'live' ? 'Sincronizado com mercado global. Clique para atualizar agora.' : 'Clique para reconectar ao mercado'}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-700/80 bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white transition text-xs font-medium cursor-pointer shadow-sm flex-shrink-0"
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isSyncing
+                  ? 'bg-amber-400 animate-ping'
+                  : syncStatus === 'live'
+                  ? 'bg-emerald-400 animate-pulse'
+                  : 'bg-rose-400'
+              }`}
+            />
+            <span className="hidden sm:inline text-[11px] font-mono">
+              {isSyncing ? 'Sincronizando...' : syncStatus === 'live' ? 'Ao Vivo' : 'Offline'}
+            </span>
           </button>
 
           {/* PWA Install Button */}

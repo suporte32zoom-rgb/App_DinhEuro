@@ -1926,10 +1926,34 @@ async function fetchDirectBrowserFallbacks(
     console.debug('[DinhEuro] Câmbio direto fallback indisponível:', err);
   }
 
-  // 3. Finnhub API direto do navegador quando chave informada
+  // 3. Frankfurter / European Central Bank para câmbio interbancário oficial (CORS aberto)
+  try {
+    const frankRes = await fetch('https://api.frankfurter.dev/v1/latest?base=USD');
+    if (frankRes.ok) {
+      const frankData = await frankRes.json();
+      if (frankData && frankData.rates) {
+        if (frankData.rates.EUR) liveRates.EUR = Number(frankData.rates.EUR);
+        if (frankData.rates.GBP) liveRates.GBP = Number(frankData.rates.GBP);
+        if (frankData.rates.JPY) liveRates.JPY = Number(frankData.rates.JPY);
+        if (frankData.rates.CHF) liveRates.CHF = Number(frankData.rates.CHF);
+        if (frankData.rates.CAD) liveRates.CAD = Number(frankData.rates.CAD);
+        if (frankData.rates.AUD) liveRates.AUD = Number(frankData.rates.AUD);
+        if (frankData.rates.CNY) liveRates.CNY = Number(frankData.rates.CNY);
+        sourcesUsed.push('Câmbio Oficial (BCE)');
+      }
+    }
+  } catch {
+    // Continue silenciosamente
+  }
+
+  // 4. Finnhub API direto do navegador quando chave informada (Ações, Índices, Commodities e Notícias)
   const fhKey = getStoredFinnhubKey() || (import.meta as any).env?.VITE_FINNHUB_API_KEY || '';
   if (fhKey && fhKey !== 'MY_FINNHUB_API_KEY') {
-    const prioritySymbols = ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'SPY', 'QQQ'];
+    const prioritySymbols = [
+      'AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'BRK.B',
+      'JPM', 'V', 'WMT', 'DIS', 'NFLX', 'AMD',
+      'SPY', 'QQQ', 'DIA', 'EWZ', 'GLD', 'USO', 'SLV'
+    ];
     await Promise.all(
       prioritySymbols.map(async (sym) => {
         try {
@@ -1937,7 +1961,7 @@ async function fetchDirectBrowserFallbacks(
           if (res.ok) {
             const data = await res.json();
             if (data && data.c && data.c > 0) {
-              rawQuotes[sym] = {
+              const quoteItem = {
                 symbol: sym,
                 price: Number(data.c.toFixed(2)),
                 change: Number(data.d.toFixed(2)),
@@ -1949,6 +1973,24 @@ async function fetchDirectBrowserFallbacks(
                 currency: 'USD',
                 source: 'finnhub_official',
               };
+              rawQuotes[sym] = quoteItem;
+
+              // Mapeamento de ETFs globais para índices correspondentes
+              if (sym === 'SPY') {
+                rawQuotes['S&P 500'] = { ...quoteItem, symbol: 'S&P 500' };
+              } else if (sym === 'QQQ') {
+                rawQuotes['NASDAQ'] = { ...quoteItem, symbol: 'NASDAQ' };
+              } else if (sym === 'DIA') {
+                rawQuotes['DOW JONES'] = { ...quoteItem, symbol: 'DOW JONES' };
+              } else if (sym === 'EWZ') {
+                rawQuotes['IBOVESPA'] = { ...quoteItem, symbol: 'IBOVESPA' };
+              } else if (sym === 'GLD') {
+                rawQuotes['OURO'] = { ...quoteItem, symbol: 'OURO' };
+              } else if (sym === 'USO') {
+                rawQuotes['PETRÓLEO WTI'] = { ...quoteItem, symbol: 'PETRÓLEO WTI' };
+              } else if (sym === 'SLV') {
+                rawQuotes['PRATA'] = { ...quoteItem, symbol: 'PRATA' };
+              }
             }
           }
         } catch {
